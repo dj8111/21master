@@ -36,18 +36,26 @@ export class ShareModal {
     document.getElementById('share-btn-email')?.addEventListener('click', () => this.shareViaEmail());
   }
 
+  getShareUrl() {
+    // 若在本地開發環境，分享網址預設指向正式的 GitHub Pages
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:') {
+      return 'https://dj8111.github.io/21master/';
+    }
+    return window.location.href;
+  }
+
   open() {
-    const currentUrl = window.location.href;
-    if (this.inputLink) this.inputLink.value = currentUrl;
+    const shareUrl = this.getShareUrl();
+    if (this.inputLink) this.inputLink.value = shareUrl;
     this.modal?.classList.add('open');
-    this.generateQRCode(currentUrl);
+    this.generateQRCode(shareUrl);
 
     // 行動裝置原生 Web Share API 優先支援
     if (navigator.share && window.innerWidth <= 768) {
       navigator.share({
         title: '21Master - 21點專業學習與算牌訓練平台',
         text: '推薦這個超強大的 21 點互動學習、Hi-Lo 算牌與基本策略訓練平台！',
-        url: currentUrl
+        url: shareUrl
       }).catch(() => {});
     }
   }
@@ -57,7 +65,7 @@ export class ShareModal {
   }
 
   copyLink() {
-    const text = this.inputLink ? this.inputLink.value : window.location.href;
+    const text = this.inputLink ? this.inputLink.value : this.getShareUrl();
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(() => {
         alert(this.i18n.t('link_copied'));
@@ -72,29 +80,34 @@ export class ShareModal {
   }
 
   shareToTwitter() {
+    const shareUrl = this.getShareUrl();
     const text = encodeURIComponent('我在使用 21Master 鍛鍊 21 點算牌與基本策略！推薦給所有想成為優勢玩家的朋友：');
-    const url = encodeURIComponent(window.location.href);
+    const url = encodeURIComponent(shareUrl);
     window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
   }
 
   shareToFacebook() {
-    const url = encodeURIComponent(window.location.href);
+    const shareUrl = this.getShareUrl();
+    const url = encodeURIComponent(shareUrl);
     window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
   }
 
   shareToLine() {
-    const text = encodeURIComponent('21Master - 21點專業學習與算牌訓練平台: ' + window.location.href);
-    window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(window.location.href)}&text=${text}`, '_blank');
+    const shareUrl = this.getShareUrl();
+    const text = encodeURIComponent('21Master - 21點專業學習與算牌訓練平台: ' + shareUrl);
+    window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}&text=${text}`, '_blank');
   }
 
   shareToWhatsApp() {
-    const text = encodeURIComponent('21Master 21點專業算牌與策略訓練: ' + window.location.href);
+    const shareUrl = this.getShareUrl();
+    const text = encodeURIComponent('21Master 21點專業算牌與策略訓練: ' + shareUrl);
     window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
   }
 
   shareViaEmail() {
+    const shareUrl = this.getShareUrl();
     const subject = encodeURIComponent('推薦 21Master 21點專業算牌學習平台');
-    const body = encodeURIComponent(`嗨！\n\n推薦你這個超實用的 21 點學習平台，具備擬真對賭、算牌考核與基本策略測驗：\n${window.location.href}`);
+    const body = encodeURIComponent(`嗨！\n\n推薦你這個超實用的 21 點學習平台，具備擬真對賭、算牌考核與基本策略測驗：\n${shareUrl}`);
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
   }
 
