@@ -95,7 +95,19 @@
               <span class="coach-status-dot off"></span> <span data-i18n="coach_mode_title">🛡️ 教練模式</span>: <b id="coach-status-text">關閉</b>
             </button>
             <button class="btn btn-secondary" id="btn-toggle-hud" data-i18n="hud_title">👁️ 算牌 HUD (關閉)</button>
-            <button class="btn btn-secondary" id="btn-toggle-ai">👥 <span data-i18n="ai_players_toggle">AI 同桌玩家</span></button>
+            
+            <!-- 自訂 AI 玩家人數選擇器 (0~4人) -->
+            <div class="ai-player-select-box" style="display: inline-flex; align-items: center; gap: 0.35rem; background: var(--bg-surface-elevated); padding: 0.2rem 0.6rem; border-radius: var(--radius-sm); border: 1px solid var(--border-glass);">
+              <span style="font-size: 0.82rem; color: var(--text-secondary); font-weight: 600;">👥 <span data-i18n="ai_players_count_label">AI 玩家人數:</span></span>
+              <select id="select-ai-count" class="form-control" style="width: auto; padding: 0.25rem 0.5rem; font-size: 0.8rem; height: auto;">
+                <option value="0" selected>0 人 (單人專注)</option>
+                <option value="1">1 位 AI</option>
+                <option value="2">2 位 AI</option>
+                <option value="3">3 位 AI</option>
+                <option value="4">4 位 AI (滿桌5人)</option>
+              </select>
+            </div>
+
             <button class="btn btn-secondary" id="btn-hint" data-i18n="hint_title">💡 策略分析 (Hint)</button>
           </div>
         </div>
@@ -145,6 +157,19 @@
             </div>
           </div>
 
+          <!-- 牌局結束確認卡片 (Round Result Card Overlay) -->
+          <div class="round-result-overlay" id="round-result-overlay" style="display: none;">
+            <div class="round-result-card glass-card">
+              <div class="result-icon-large" id="result-icon-large">🎉</div>
+              <h3 class="result-title-large" id="result-title-large">玩家獲勝！</h3>
+              <p class="result-desc-large" id="result-desc-large">玩家 (20點) 擊敗莊家 (19點)！</p>
+              <div class="result-payout-tag" id="result-payout-tag">+$50</div>
+              <button class="btn btn-primary" id="btn-next-round-confirm" style="margin-top: 1rem; width: 100%;">
+                <span data-i18n="btn_next_round">確認並清空檯面 (下一局)</span> <span class="action-key-hint">Space / Enter</span>
+              </button>
+            </div>
+          </div>
+
           <!-- 中央下注圈與籌碼區 (Betting Spot) -->
           <div class="table-center-bet-area" id="betting-area-wrapper">
             <div class="betting-circle" id="table-betting-spot" title="點擊下注所選籌碼">
@@ -154,28 +179,8 @@
             </div>
           </div>
 
-          <!-- 玩家區域 (支援多座位：AI 1, 玩家, AI 2) -->
-          <div class="player-area">
-            
-            <!-- Seat 1: AI 玩家 1 (預設隱藏) -->
-            <div class="player-spot ai-spot" id="ai1-spot" style="display: none;">
-              <div class="hand-badge" id="ai1-hand-badge">AI老王: 0點</div>
-              <div class="cards-row" id="ai1-cards"></div>
-            </div>
-
-            <!-- Seat 2: 使用者本家 -->
-            <div class="player-spot active" id="player-main-spot">
-              <div class="hand-badge" id="player-hand-badge">玩家: 0 點</div>
-              <div class="cards-row" id="player-cards"></div>
-            </div>
-
-            <!-- Seat 3: AI 玩家 2 (預設隱藏) -->
-            <div class="player-spot ai-spot" id="ai2-spot" style="display: none;">
-              <div class="hand-badge" id="ai2-hand-badge">AI小陳: 0點</div>
-              <div class="cards-row" id="ai2-cards"></div>
-            </div>
-
-          </div>
+          <!-- 動態多座位玩家區域 (支援 1~5 個座位：Seat 0~4) -->
+          <div class="player-area" id="table-seats-container"></div>
 
           <!-- 桌內一體化操作底座 (籌碼選擇 / 下注調整 / 發牌 / 決策按鈕) -->
           <div class="table-integrated-controls">

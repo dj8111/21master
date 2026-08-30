@@ -310,14 +310,89 @@
   100% { transform: scale(1); opacity: 1; }
 }
 
-/* 玩家手牌區域 (支援多座位) */
-.player-area {
+/* 牌局結算確認覆蓋卡片 (Round Result Overlay) */
+.round-result-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(8, 12, 20, 0.78);
+  backdrop-filter: blur(8px);
   display: flex;
   justify-content: center;
+  align-items: center;
+  z-index: 60;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.round-result-card {
+  max-width: 420px;
+  width: 90%;
+  padding: 1.75rem 2rem;
+  text-align: center;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-glass-bright);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(245, 158, 11, 0.2);
+  transform: scale(0.95);
+  animation: modalPopIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.result-icon-large {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+  animation: pulseGlow 2s infinite;
+}
+
+.result-title-large {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  color: #fff;
+  margin-bottom: 0.35rem;
+}
+
+.result-desc-large {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+.result-payout-tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--color-success);
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  padding: 0.35rem 1.25rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 0.5rem;
+}
+
+.result-payout-tag.lose {
+  color: var(--color-danger);
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.result-payout-tag.push {
+  color: var(--cyan-accent);
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+/* 玩家手牌區域 (支援 1~5 個多座位動態分佈) */
+.player-area {
+  display: flex;
+  justify-content: space-evenly;
   align-items: flex-end;
-  gap: 1.5rem;
   width: 100%;
+  padding: 0 1rem;
   z-index: 5;
+  gap: 0.75rem;
+  flex-wrap: nowrap;
 }
 
 .player-spot {
@@ -327,14 +402,42 @@
   gap: 0.4rem;
   position: relative;
   transition: all var(--transition-fast);
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  min-width: 90px;
 }
 
-.player-spot.ai-spot {
-  opacity: 0.85;
+.player-spot.seat-active {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: var(--gold-primary);
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.35);
+  transform: translateY(-4px);
+}
+
+.player-spot.seat-player {
+  background: rgba(15, 23, 42, 0.45);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.player-spot.seat-player.seat-active {
+  border-color: var(--gold-primary);
+  box-shadow: 0 0 25px rgba(245, 158, 11, 0.6);
+}
+
+.player-spot.seat-ai {
+  opacity: 0.88;
   transform: scale(0.92);
 }
 
-.player-spot.ai-spot .hand-badge {
+.player-spot.seat-ai.seat-active {
+  opacity: 1;
+  transform: scale(0.98) translateY(-4px);
+  border-color: var(--cyan-accent);
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+}
+
+.player-spot.seat-ai .hand-badge {
   background: rgba(15, 23, 42, 0.9);
   border-color: rgba(56, 189, 248, 0.4);
   color: var(--cyan-accent);

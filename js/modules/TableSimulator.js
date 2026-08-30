@@ -1,5 +1,5 @@
 /**
- * TableSimulator.js - 21點模擬檯面對賭、教練提示與即時算牌 HUD 模組
+ * TableSimulator.js - 21點專業模擬檯面 (支援0~4位AI玩家、嚴格順序發牌與補牌、結算確認清空檯面)
  */
 import { Deck } from '../engine/Deck.js';
 import { StrategyEngine } from '../engine/StrategyEngine.js';
@@ -23,25 +23,25 @@ export class TableSimulator {
 
     // 玩家與賭桌狀態
     this.bankroll = 1000;
-    this.currentBet = 0; // 每局開始前需主動下注
+    this.currentBet = 0; // 當前局下注
     this.lastBet = 25; // 記錄上一把下注金額以便 Rebet
     this.selectedChip = 25;
-    this.gameState = 'BETTING'; // 'BETTING', 'PLAYER_TURN', 'DEALER_TURN', 'RESOLVED'
+    this.gameState = 'BETTING'; // 'BETTING', 'DEALING', 'SEATS_TURN', 'DEALER_TURN', 'ROUND_OVER'
     this.coachMode = false; // 預設關閉教練模式
     this.showHUD = false; // 預設關閉算牌 HUD
-    this.enableAIPlayers = false; // 多座位 AI 玩家模式
+    this.aiPlayerCount = 0; // 0~4 位 AI 玩家
 
+    // 座位與手牌模型
+    this.seats = [];
+    this.playerSeatIndex = 0;
+    this.activeSeatIndex = -1;
     this.dealerCards = [];
-    this.playerCards = [];
-    this.ai1Cards = []; // Seat 1
-    this.ai2Cards = []; // Seat 3
-    this.splitHands = [];
-    this.activeHandIndex = 0;
 
     this.deck = new Deck(this.rules.numDecks, this.rules.penetration);
     this.counter = new CountingEngine(this.rules.numDecks, this.rules.countingSystem);
 
     this.initDOM();
+    this.setupSeats();
     this.bindEvents();
     this.updateHUD();
     this.render();
@@ -52,18 +52,19 @@ export class TableSimulator {
     this.elCurrentBet = document.getElementById('table-current-bet');
     this.elDealerCards = document.getElementById('dealer-cards');
     this.elDealerBadge = document.getElementById('dealer-hand-badge');
-    this.elPlayerCards = document.getElementById('player-cards');
-    this.elPlayerBadge = document.getElementById('player-hand-badge');
-    this.elAi1Spot = document.getElementById('ai1-spot');
-    this.elAi2Spot = document.getElementById('ai2-spot');
-    this.elAi1Cards = document.getElementById('ai1-cards');
-    this.elAi2Cards = document.getElementById('ai2-cards');
-    this.elAi1Badge = document.getElementById('ai1-hand-badge');
-    this.elAi2Badge = document.getElementById('ai2-hand-badge');
+    this.elSeatsContainer = document.getElementById('table-seats-container');
     this.elShoeFill = document.getElementById('shoe-fill-bar');
     this.elShoeDecksText = document.getElementById('shoe-decks-text');
     this.elBetSpot = document.getElementById('table-betting-spot');
     this.elBetChipsStack = document.getElementById('bet-chips-stack');
+
+    // 結算結果卡片元素
+    this.elResultOverlay = document.getElementById('round-result-overlay');
+    this.elResultIcon = document.getElementById('result-icon-large');
+    this.elResultTitle = document.getElementById('result-title-large');
+    this.elResultDesc = document.getElementById('result-desc-large');
+    this.elResultPayout = document.getElementById('result-payout-tag');
+    this.btnNextRoundConfirm = document.getElementById('btn-next-round-confirm');
 
     // HUD 元素
     this.elHudPanel = document.getElementById('counting-hud-panel');
@@ -79,7 +80,7 @@ export class TableSimulator {
     this.elCoachRecReason = document.getElementById('coach-rec-reason');
     this.elCoachStatusText = document.getElementById('coach-status-text');
 
-    // 操作按鈕
+    // 控制與按鈕
     this.btnDeal = document.getElementById('btn-deal');
     this.btnClearBet = document.getElementById('btn-clear-bet');
     this.btnRebet = document.getElementById('btn-rebet');
@@ -92,9 +93,50 @@ export class TableSimulator {
     this.btnHint = document.getElementById('btn-hint');
     this.btnToggleHUD = document.getElementById('btn-toggle-hud');
     this.btnToggleCoach = document.getElementById('btn-toggle-coach');
+    this.selectAICount = document.getElementById('select-ai-count');
 
-    // 籌碼選擇按鈕
     this.chipButtons = document.querySelectorAll('.chip-selector');
+  }
+
+  /**
+   * 根據 AI 人數分配座位配置
+   */
+  setupSeats() {
+    this.seats = [];
+    const aiCount = this.aiPlayerCount;
+    const aiNames = ['老王 (穩健)', '小陳 (衝動)', '大衛 (保守)', '艾米 (算牌手)'];
+
+    if (aiCount === 0) {
+      // 單人本家
+      this.playerSeatIndex = 0;
+      this.seats.push({ isAI: false, name: '玩家 (本家)', cards: [], bet: 0, status: 'WAITING' });
+    } else if (aiCount === 1) {
+      // 1 AI + 1 玩家
+      this.playerSeatIndex = 1;
+      this.seats.push({ isAI: true, name: aiNames[0], cards: [], bet: 25, status: 'WAITING' });
+      this.seats.push({ isAI: false, name: '玩家 (本家)', cards: [], bet: 0, status: 'WAITING' });
+    } else if (aiCount === 2) {
+      // 1 AI + 1 玩家 + 1 AI
+      this.playerSeatIndex = 1;
+      this.seats.push({ isAI: true, name: aiNames[0], cards: [], bet: 25, status: 'WAITING' });
+      this.seats.push({ isAI: false, name: '玩家 (本家)', cards: [], bet: 0, status: 'WAITING' });
+      this.seats.push({ isAI: true, name: aiNames[1], cards: [], bet: 25, status: 'WAITING' });
+    } else if (aiCount === 3) {
+      // 2 AI + 1 玩家 + 1 AI
+      this.playerSeatIndex = 2;
+      this.seats.push({ isAI: true, name: aiNames[0], cards: [], bet: 25, status: 'WAITING' });
+      this.seats.push({ isAI: true, name: aiNames[1], cards: [], bet: 25, status: 'WAITING' });
+      this.seats.push({ isAI: false, name: '玩家 (本家)', cards: [], bet: 0, status: 'WAITING' });
+      this.seats.push({ isAI: true, name: aiNames[2], cards: [], bet: 25, status: 'WAITING' });
+    } else {
+      // 2 AI + 1 玩家 + 2 AI (滿桌5人)
+      this.playerSeatIndex = 2;
+      this.seats.push({ isAI: true, name: aiNames[0], cards: [], bet: 25, status: 'WAITING' });
+      this.seats.push({ isAI: true, name: aiNames[1], cards: [], bet: 25, status: 'WAITING' });
+      this.seats.push({ isAI: false, name: '玩家 (本家)', cards: [], bet: 0, status: 'WAITING' });
+      this.seats.push({ isAI: true, name: aiNames[2], cards: [], bet: 25, status: 'WAITING' });
+      this.seats.push({ isAI: true, name: aiNames[3], cards: [], bet: 25, status: 'WAITING' });
+    }
   }
 
   bindEvents() {
@@ -103,12 +145,15 @@ export class TableSimulator {
     this.btnRebet?.addEventListener('click', () => this.rebet());
     this.btnDoubleBet?.addEventListener('click', () => this.doublePreBet());
 
-    this.btnHit?.addEventListener('click', () => this.handleAction('H'));
-    this.btnStand?.addEventListener('click', () => this.handleAction('S'));
-    this.btnDouble?.addEventListener('click', () => this.handleAction('D'));
-    this.btnSplit?.addEventListener('click', () => this.handleAction('P'));
-    this.btnSurrender?.addEventListener('click', () => this.handleAction('R'));
+    this.btnHit?.addEventListener('click', () => this.handlePlayerAction('H'));
+    this.btnStand?.addEventListener('click', () => this.handlePlayerAction('S'));
+    this.btnDouble?.addEventListener('click', () => this.handlePlayerAction('D'));
+    this.btnSplit?.addEventListener('click', () => this.handlePlayerAction('P'));
+    this.btnSurrender?.addEventListener('click', () => this.handlePlayerAction('R'));
     this.btnHint?.addEventListener('click', () => this.showHintToast());
+
+    // 結算確認按鈕
+    this.btnNextRoundConfirm?.addEventListener('click', () => this.confirmAndClearTable());
 
     this.btnToggleHUD?.addEventListener('click', () => {
       this.showHUD = !this.showHUD;
@@ -130,16 +175,20 @@ export class TableSimulator {
       this.renderCoachGuidance();
     });
 
-    this.btnToggleAI = document.getElementById('btn-toggle-ai');
-    this.btnToggleAI?.addEventListener('click', () => {
-      this.enableAIPlayers = !this.enableAIPlayers;
-      this.btnToggleAI.classList.toggle('active', this.enableAIPlayers);
-      if (this.elAi1Spot) this.elAi1Spot.style.display = this.enableAIPlayers ? 'flex' : 'none';
-      if (this.elAi2Spot) this.elAi2Spot.style.display = this.enableAIPlayers ? 'flex' : 'none';
-      this.showToast(this.enableAIPlayers ? '👥 已開啟 2 位同桌 AI 玩家（多座位發牌干擾模式）' : '👤 已切換為單人專注模式', 'info');
+    // 選擇 AI 人數 (0~4人)
+    this.selectAICount?.addEventListener('change', (e) => {
+      if (this.gameState !== 'BETTING') {
+        alert('請在下注階段切換 AI 玩家人數！');
+        this.selectAICount.value = this.aiPlayerCount;
+        return;
+      }
+      this.aiPlayerCount = parseInt(e.target.value, 10);
+      this.setupSeats();
+      this.render();
+      this.showToast(`👥 已設定同桌 AI 玩家人數為 ${this.aiPlayerCount} 位`, 'info');
     });
 
-    // 點擊籌碼按鈕直接將該籌碼金額加到下注圈
+    // 點擊籌碼選擇器
     this.chipButtons?.forEach(btn => {
       btn.addEventListener('click', () => {
         const val = parseInt(btn.dataset.value, 10);
@@ -150,38 +199,40 @@ export class TableSimulator {
       });
     });
 
-    // 點擊下注圈增加當前選擇的籌碼
+    // 點擊中央下注圈增加籌碼
     this.elBetSpot?.addEventListener('click', () => {
       this.addBet(this.selectedChip);
     });
 
-    // 鍵盤快速鍵
+    // 鍵盤快速鍵支援
     window.addEventListener('keydown', (e) => {
-      if (document.querySelector('.tab-pane#pane-table.active')) {
-        const key = e.key.toUpperCase();
-        if (this.gameState === 'BETTING') {
-          if (e.code === 'Space') {
-            e.preventDefault();
-            this.startDeal();
-          } else if (key === 'C') {
-            this.clearBet();
-          } else if (key === 'R') {
-            this.rebet();
-          }
-        } else if (this.gameState === 'PLAYER_TURN') {
-          if (key === 'H') this.handleAction('H');
-          if (key === 'S') this.handleAction('S');
-          if (key === 'D') this.handleAction('D');
-          if (key === 'P') this.handleAction('P');
-          if (key === 'R') this.handleAction('R');
+      if (!document.querySelector('.tab-pane#pane-table.active')) return;
+      const key = e.key.toUpperCase();
+
+      if (this.gameState === 'ROUND_OVER') {
+        if (e.code === 'Space' || e.code === 'Enter') {
+          e.preventDefault();
+          this.confirmAndClearTable();
         }
+      } else if (this.gameState === 'BETTING') {
+        if (e.code === 'Space' || e.code === 'Enter') {
+          e.preventDefault();
+          this.startDeal();
+        } else if (key === 'C') {
+          this.clearBet();
+        } else if (key === 'R') {
+          this.rebet();
+        }
+      } else if (this.gameState === 'SEATS_TURN' && this.activeSeatIndex === this.playerSeatIndex) {
+        if (key === 'H') this.handlePlayerAction('H');
+        if (key === 'S') this.handlePlayerAction('S');
+        if (key === 'D') this.handlePlayerAction('D');
+        if (key === 'P') this.handlePlayerAction('P');
+        if (key === 'R') this.handlePlayerAction('R');
       }
     });
   }
 
-  /**
-   * 點擊籌碼或下注圈增加下注
-   */
   addBet(amount) {
     if (this.gameState !== 'BETTING') return;
     if (this.bankroll >= this.currentBet + amount) {
@@ -193,9 +244,6 @@ export class TableSimulator {
     }
   }
 
-  /**
-   * 清除當前下注
-   */
   clearBet() {
     if (this.gameState !== 'BETTING') return;
     this.currentBet = 0;
@@ -203,9 +251,6 @@ export class TableSimulator {
     this.render();
   }
 
-  /**
-   * 重複上一局下注金額 (Rebet)
-   */
   rebet() {
     if (this.gameState !== 'BETTING') return;
     if (this.lastBet > 0 && this.bankroll >= this.lastBet) {
@@ -217,9 +262,6 @@ export class TableSimulator {
     }
   }
 
-  /**
-   * 下注前翻倍 (2x Bet)
-   */
   doublePreBet() {
     if (this.gameState !== 'BETTING') return;
     const target = (this.currentBet === 0 ? this.selectedChip * 2 : this.currentBet * 2);
@@ -233,7 +275,8 @@ export class TableSimulator {
   }
 
   /**
-   * 開始新回合發牌
+   * 開始新回合：嚴格依順序發牌
+   * 順序：第一輪 Seat 0..N -> Dealer(Up)；第二輪 Seat 0..N -> Dealer(Down)
    */
   startDeal() {
     if (this.gameState !== 'BETTING') return;
@@ -248,11 +291,16 @@ export class TableSimulator {
 
     this.lastBet = this.currentBet;
     this.bankroll -= this.currentBet;
-    this.gameState = 'PLAYER_TURN';
+    this.gameState = 'DEALING';
     this.dealerCards = [];
-    this.playerCards = [];
-    this.ai1Cards = [];
-    this.ai2Cards = [];
+    this.activeSeatIndex = -1;
+
+    // 清空重設所有座位卡牌與狀態
+    this.seats.forEach((seat, idx) => {
+      seat.cards = [];
+      seat.status = 'PLAYING';
+      seat.bet = (idx === this.playerSeatIndex) ? this.currentBet : (Math.floor(Math.random() * 3) + 1) * 25;
+    });
 
     if (this.deck.needsReshuffle) {
       this.deck.initShoe();
@@ -260,208 +308,218 @@ export class TableSimulator {
       this.showToast('牌靴已達切牌深度，已重新洗牌！', 'info');
     }
 
-    // 發牌流程 (支援多座位 AI 玩家)
-    if (this.enableAIPlayers) {
-      // Round 1: AI1 -> Player -> AI2 -> Dealer(Up)
-      this.ai1Cards.push(this.dealCardWithCount());
-      setTimeout(() => {
-        this.playerCards.push(this.dealCardWithCount());
-        setTimeout(() => {
-          this.ai2Cards.push(this.dealCardWithCount());
-          setTimeout(() => {
-            this.dealerCards.push(this.dealCardWithCount());
-            
-            // Round 2
-            setTimeout(() => {
-              this.ai1Cards.push(this.dealCardWithCount());
-              setTimeout(() => {
-                this.playerCards.push(this.dealCardWithCount());
-                setTimeout(() => {
-                  this.ai2Cards.push(this.dealCardWithCount());
-                  setTimeout(() => {
-                    const d2 = this.deck.deal(); // 莊家暗牌
-                    this.dealerCards.push(d2);
-                    this.sound.playCardSlide();
-                    this.checkInitialBlackjack();
-                    this.updateHUD();
-                    this.render();
-                  }, 120);
-                }, 120);
-              }, 120);
-            }, 120);
+    this.render();
 
-          }, 120);
-        }, 120);
-      }, 120);
-    } else {
-      // 單人模式
-      const p1 = this.dealCardWithCount();
-      this.playerCards.push(p1);
+    // 建立嚴格順序發牌佇列
+    const dealSequence = [];
 
-      setTimeout(() => {
-        const d1 = this.dealCardWithCount();
-        this.dealerCards.push(d1);
+    // 第一輪：各座位發 1 張明牌
+    this.seats.forEach((_, seatIdx) => {
+      dealSequence.push({ type: 'SEAT', seatIdx, faceUp: true });
+    });
+    // 莊家第 1 張明牌
+    dealSequence.push({ type: 'DEALER', faceUp: true });
 
-        setTimeout(() => {
-          const p2 = this.dealCardWithCount();
-          this.playerCards.push(p2);
+    // 第二輪：各座位發第 2 張明牌
+    this.seats.forEach((_, seatIdx) => {
+      dealSequence.push({ type: 'SEAT', seatIdx, faceUp: true });
+    });
+    // 莊家第 2 張暗牌
+    dealSequence.push({ type: 'DEALER', faceUp: false });
 
-          setTimeout(() => {
-            const d2 = this.deck.deal();
-            this.dealerCards.push(d2);
-            this.sound.playCardSlide();
-            this.checkInitialBlackjack();
-            this.updateHUD();
-            this.render();
-          }, 180);
-        }, 180);
-      }, 180);
-    }
-  }
-
-  dealCardWithCount() {
-    const card = this.deck.deal();
-    this.counter.processCard(card);
-    this.sound.playCardSlide();
-    return card;
-  }
-
-  checkInitialBlackjack() {
-    const playerEval = StrategyEngine.evaluateHand(this.playerCards);
-    const dealerEval = StrategyEngine.evaluateHand(this.dealerCards);
-
-    if (playerEval.isBlackjack) {
-      // 翻開莊家暗牌
-      this.counter.processCard(this.dealerCards[1]);
-      if (dealerEval.isBlackjack) {
-        // 平手 Push
-        this.bankroll += this.currentBet;
-        this.endRound('Push! 雙方皆為黑傑克平手', 'push');
-      } else {
-        // 玩家獲勝 3:2
-        const winAmount = this.currentBet + this.currentBet * this.rules.blackjackPayout;
-        this.bankroll += winAmount;
-        this.sound.playWin();
-        this.endRound(`Blackjack! 恭喜獲得 ${this.rules.blackjackPayout === 1.5 ? '3:2' : '6:5'} 賠率獎金`, 'win');
+    let step = 0;
+    const processDealStep = () => {
+      if (step >= dealSequence.length) {
+        // 發牌完成，進入座位依序補牌階段
+        this.gameState = 'SEATS_TURN';
+        this.updateHUD();
+        this.render();
+        this.startNextSeatTurn(0);
+        return;
       }
+
+      const item = dealSequence[step];
+      const card = this.deck.deal();
+
+      if (item.type === 'SEAT') {
+        this.seats[item.seatIdx].cards.push(card);
+        this.counter.processCard(card);
+      } else {
+        this.dealerCards.push(card);
+        if (item.faceUp) {
+          this.counter.processCard(card);
+        }
+      }
+
+      this.sound.playCardSlide();
+      this.updateHUD();
+      this.render();
+      step++;
+      setTimeout(processDealStep, 160);
+    };
+
+    setTimeout(processDealStep, 100);
+  }
+
+  /**
+   * 嚴格依順序補牌 (從 Seat 0 開始，依序交棒給下一座位)
+   */
+  startNextSeatTurn(seatIndex) {
+    if (seatIndex >= this.seats.length) {
+      // 所有座位皆完成行動，換莊家補牌
+      this.runDealerTurn();
+      return;
+    }
+
+    this.activeSeatIndex = seatIndex;
+    const currentSeat = this.seats[seatIndex];
+    this.render();
+
+    // 檢查此座位是否一開始就拿到 Natural Blackjack
+    const evalHand = StrategyEngine.evaluateHand(currentSeat.cards);
+    if (evalHand.isBlackjack) {
+      currentSeat.status = 'BLACKJACK';
+      this.render();
+      setTimeout(() => this.startNextSeatTurn(seatIndex + 1), 600);
+      return;
+    }
+
+    if (currentSeat.isAI) {
+      // AI 玩家回合：自動模擬補牌
+      this.processAITurn(seatIndex);
+    } else {
+      // 玩家本家回合：開放按鈕，等待使用者互動
+      this.renderCoachGuidance();
     }
   }
 
   /**
-   * 玩家執行動作 (Hit, Stand, Double, Split, Surrender)
+   * AI 玩家模擬行動 (依不同性格決策)
    */
-  handleAction(action) {
-    if (this.gameState !== 'PLAYER_TURN') return;
+  processAITurn(seatIndex) {
+    const seat = this.seats[seatIndex];
 
-    // 教練評估
+    const aiStep = () => {
+      const evalH = StrategyEngine.evaluateHand(seat.cards);
+      if (evalH.total >= 21) {
+        seat.status = (evalH.total === 21) ? 'STAND' : 'BUST';
+        this.render();
+        setTimeout(() => this.startNextSeatTurn(seatIndex + 1), 400);
+        return;
+      }
+
+      // 決策邏輯 (小於 16 要牌，16/17 依莊家明牌微調)
+      const dealerUp = this.dealerCards[0];
+      const shouldHit = evalH.total < 16 || (evalH.total === 16 && dealerUp && dealerUp.getValue() >= 7);
+
+      if (shouldHit) {
+        const card = this.deck.deal();
+        seat.cards.push(card);
+        this.counter.processCard(card);
+        this.sound.playCardSlide();
+        this.updateHUD();
+        this.render();
+        setTimeout(aiStep, 450);
+      } else {
+        seat.status = 'STAND';
+        this.sound.playKnock();
+        this.render();
+        setTimeout(() => this.startNextSeatTurn(seatIndex + 1), 400);
+      }
+    };
+
+    setTimeout(aiStep, 400);
+  }
+
+  /**
+   * 玩家本家操作行動
+   */
+  handlePlayerAction(action) {
+    if (this.gameState !== 'SEATS_TURN' || this.activeSeatIndex !== this.playerSeatIndex) return;
+
+    const playerSeat = this.seats[this.playerSeatIndex];
+    const dealerUp = this.dealerCards[0];
     const remainingDecks = this.deck.getRemainingDecks();
-    const trueCount = this.counter.getTrueCount(remainingDecks);
-    const optimal = StrategyEngine.getOptimalDecision(this.playerCards, this.dealerCards[0], trueCount, this.rules);
+    const tc = this.counter.getTrueCount(remainingDecks);
+    const optimal = StrategyEngine.getOptimalDecision(playerSeat.cards, dealerUp, tc, this.rules);
 
-    // 檢查是否符合最優決策
-    const isActionOptimal = this.validateActionMatch(action, optimal.action);
-    if (!isActionOptimal && this.coachMode) {
-      this.sound.playWrong();
+    // 記錄決策準確度
+    const isCorrect = (action === optimal.action || (action === 'H' && optimal.action === 'D'));
+    this.analytics.recordDecision(isCorrect, isCorrect ? '' : `手牌: ${playerSeat.cards.map(c=>c.rank).join(',')} vs 莊家: ${dealerUp.rank}。建議: ${optimal.action} (${optimal.reason})`);
+
+    if (!isCorrect && this.coachMode) {
       this.showMistakeToast(action, optimal);
-      this.analytics.recordDecision(false, optimal.reason);
-    } else {
-      this.sound.playCorrect();
-      this.analytics.recordDecision(true);
+      this.sound.playWrong();
     }
 
-    // 執行對應動作
     if (action === 'H') {
       const card = this.deck.deal();
-      this.playerCards.push(card);
+      playerSeat.cards.push(card);
       this.counter.processCard(card);
       this.sound.playCardSlide();
 
-      const evalHand = StrategyEngine.evaluateHand(this.playerCards);
-      if (evalHand.total > 21) {
-        this.sound.playWrong();
-        this.endRound('Bust! 點數爆牌了', 'lose');
-      } else if (evalHand.total === 21) {
-        this.handleAction('S'); // 自動停牌
+      const evalH = StrategyEngine.evaluateHand(playerSeat.cards);
+      if (evalH.total >= 21) {
+        playerSeat.status = (evalH.total === 21) ? 'STAND' : 'BUST';
+        this.updateHUD();
+        this.render();
+        setTimeout(() => this.startNextSeatTurn(this.playerSeatIndex + 1), 500);
+      } else {
+        this.updateHUD();
+        this.render();
       }
     } else if (action === 'S') {
-      this.sound.playTableTap();
-      this.runDealerTurn();
+      playerSeat.status = 'STAND';
+      this.sound.playKnock();
+      this.render();
+      setTimeout(() => this.startNextSeatTurn(this.playerSeatIndex + 1), 400);
     } else if (action === 'D') {
       if (this.bankroll >= this.currentBet) {
         this.bankroll -= this.currentBet;
         this.currentBet *= 2;
+        playerSeat.bet = this.currentBet;
+        this.sound.playChipClink();
+
         const card = this.deck.deal();
-        this.playerCards.push(card);
+        playerSeat.cards.push(card);
         this.counter.processCard(card);
         this.sound.playCardSlide();
 
-        const evalHand = StrategyEngine.evaluateHand(this.playerCards);
-        if (evalHand.total > 21) {
-          this.sound.playWrong();
-          this.endRound('Bust! 加倍後爆牌', 'lose');
-        } else {
-          this.runDealerTurn();
-        }
+        const evalH = StrategyEngine.evaluateHand(playerSeat.cards);
+        playerSeat.status = (evalH.total > 21) ? 'BUST' : 'STAND';
+        this.updateHUD();
+        this.render();
+        setTimeout(() => this.startNextSeatTurn(this.playerSeatIndex + 1), 500);
       } else {
-        alert('籌碼餘額不足，無法加倍！');
+        this.showToast('餘額不足，無法加倍！', 'mistake');
       }
     } else if (action === 'R') {
-      // 投降取回 50%
-      this.bankroll += this.currentBet * 0.5;
-      this.endRound('投降 (Surrender)，取回半數注碼', 'surrender');
+      playerSeat.status = 'SURRENDER';
+      this.bankroll += Math.floor(this.currentBet / 2);
+      this.render();
+      setTimeout(() => this.startNextSeatTurn(this.playerSeatIndex + 1), 400);
+    } else if (action === 'P') {
+      this.showToast('分牌目前以主手牌繼續進行', 'info');
+      this.handlePlayerAction('H');
     }
-
-    this.updateHUD();
-    this.render();
-  }
-
-  validateActionMatch(playerAction, optimalAction) {
-    if (playerAction === optimalAction) return true;
-    if (optimalAction === 'Ds' && (playerAction === 'D' || playerAction === 'S')) return true;
-    if (optimalAction === 'Rh' && (playerAction === 'R' || playerAction === 'H')) return true;
-    if (optimalAction === 'Rs' && (playerAction === 'R' || playerAction === 'S')) return true;
-    return false;
   }
 
   /**
-   * 莊家補牌流程 (若有 AI 玩家則先執行 AI 玩家回合)
+   * 莊家回合：翻開暗牌並補牌至 17 點以上
    */
   runDealerTurn() {
     this.gameState = 'DEALER_TURN';
+    this.activeSeatIndex = -1;
 
-    // 若開啟 AI 玩家模式，先執行 AI 玩家決策
-    if (this.enableAIPlayers) {
-      const runAiTurn = (cards, badgeEl, callback) => {
-        let ev = StrategyEngine.evaluateHand(cards);
-        if (ev.total < 16) {
-          setTimeout(() => {
-            cards.push(this.dealCardWithCount());
-            this.render();
-            runAiTurn(cards, badgeEl, callback);
-          }, 300);
-        } else {
-          callback();
-        }
-      };
-
-      runAiTurn(this.ai2Cards, this.elAi2Badge, () => {
-        this.executeDealerDraws();
-      });
-    } else {
-      this.executeDealerDraws();
-    }
-  }
-
-  executeDealerDraws() {
-    // 翻開莊家暗牌並計入算牌
+    // 翻開暗牌並計入算牌
     if (this.dealerCards.length >= 2) {
       this.counter.processCard(this.dealerCards[1]);
     }
+    this.updateHUD();
+    this.render();
 
     const dealerStep = () => {
       let evalDealer = StrategyEngine.evaluateHand(this.dealerCards);
-
-      // S17: >=17 停牌; H17: Soft 17 必須要牌
       const mustHit = this.rules.dealerHitsSoft17 
         ? (evalDealer.total < 17 || (evalDealer.total === 17 && evalDealer.isSoft))
         : (evalDealer.total < 17);
@@ -471,44 +529,131 @@ export class TableSimulator {
         this.dealerCards.push(card);
         this.counter.processCard(card);
         this.sound.playCardSlide();
+        this.updateHUD();
         this.render();
-        setTimeout(dealerStep, 400);
+        setTimeout(dealerStep, 450);
       } else {
-        this.resolveFinalWinner();
+        this.resolveRoundResults();
       }
     };
 
-    setTimeout(dealerStep, 400);
+    setTimeout(dealerStep, 500);
   }
 
   /**
-   * 結算雙方勝負
+   * 結算所有座位與莊家之勝負，並彈出結果確認浮層
    */
-  resolveFinalWinner() {
-    const pEval = StrategyEngine.evaluateHand(this.playerCards);
+  resolveRoundResults() {
+    this.gameState = 'ROUND_OVER';
     const dEval = StrategyEngine.evaluateHand(this.dealerCards);
+    const pSeat = this.seats[this.playerSeatIndex];
+    const pEval = StrategyEngine.evaluateHand(pSeat.cards);
 
-    if (dEval.total > 21) {
+    let resultTitle = '';
+    let resultDesc = '';
+    let payoutText = '';
+    let payoutClass = 'win';
+    let icon = '🎉';
+
+    if (pSeat.status === 'SURRENDER') {
+      resultTitle = '投降 (Surrender)';
+      resultDesc = '你選擇了遲投降，收回 50% 籌碼本金。';
+      payoutText = `-$${Math.floor(this.currentBet / 2)}`;
+      payoutClass = 'lose';
+      icon = '🏳️';
+    } else if (pSeat.status === 'BUST' || pEval.total > 21) {
+      resultTitle = '玩家爆牌 (Bust)！';
+      resultDesc = `手牌點數達 ${pEval.total} 點超過 21 點。`;
+      payoutText = `-$${this.currentBet}`;
+      payoutClass = 'lose';
+      icon = '💥';
+      this.sound.playWrong();
+    } else if (pSeat.status === 'BLACKJACK' || pEval.isBlackjack) {
+      if (dEval.isBlackjack) {
+        this.bankroll += this.currentBet;
+        resultTitle = '雙方皆為 Blackjack (Push)！';
+        resultDesc = '雙方首兩張皆為 21 點，平手退回注碼。';
+        payoutText = '$0';
+        payoutClass = 'push';
+        icon = '🤝';
+      } else {
+        const winAmount = Math.floor(this.currentBet * this.rules.blackjackPayout);
+        this.bankroll += this.currentBet + winAmount;
+        resultTitle = '🔥 Natural Blackjack 3:2 獲勝！';
+        resultDesc = `天生 21 點！獲得 1.5 倍賠率獎金。`;
+        payoutText = `+$${winAmount}`;
+        payoutClass = 'win';
+        icon = '👑';
+        this.sound.playWin();
+      }
+    } else if (dEval.total > 21) {
       this.bankroll += this.currentBet * 2;
+      resultTitle = '莊家爆牌 (Dealer Bust)！';
+      resultDesc = `莊家補牌至 ${dEval.total} 點爆牌，玩家獲勝！`;
+      payoutText = `+$${this.currentBet}`;
+      payoutClass = 'win';
+      icon = '🏆';
       this.sound.playWin();
-      this.endRound(`莊家爆牌 (${dEval.total} 點)！玩家獲勝 +$${this.currentBet}`, 'win');
     } else if (pEval.total > dEval.total) {
       this.bankroll += this.currentBet * 2;
+      resultTitle = '玩家點數大 獲勝！';
+      resultDesc = `玩家 (${pEval.total} 點) 擊敗 莊家 (${dEval.total} 點)！`;
+      payoutText = `+$${this.currentBet}`;
+      payoutClass = 'win';
+      icon = '🎉';
       this.sound.playWin();
-      this.endRound(`玩家 (${pEval.total} 點) 擊敗莊家 (${dEval.total} 點)！獲勝 +$${this.currentBet}`, 'win');
     } else if (pEval.total === dEval.total) {
       this.bankroll += this.currentBet;
-      this.endRound(`平手 (雙方皆為 ${pEval.total} 點)！退回注碼`, 'push');
+      resultTitle = '平手 (Push)！';
+      resultDesc = `雙方點數皆為 ${pEval.total} 點，退回注碼。`;
+      payoutText = '$0';
+      payoutClass = 'push';
+      icon = '🤝';
     } else {
+      resultTitle = '莊家獲勝！';
+      resultDesc = `莊家 (${dEval.total} 點) 贏過 玩家 (${pEval.total} 點)。`;
+      payoutText = `-$${this.currentBet}`;
+      payoutClass = 'lose';
+      icon = '💀';
       this.sound.playWrong();
-      this.endRound(`莊家 (${dEval.total} 點) 贏過玩家 (${pEval.total} 點)`, 'lose');
     }
+
+    this.showResultOverlay(icon, resultTitle, resultDesc, payoutText, payoutClass);
+    this.updateHUD();
+    this.render();
   }
 
-  endRound(message, type) {
+  showResultOverlay(icon, title, desc, payout, payoutClass) {
+    if (!this.elResultOverlay) return;
+    if (this.elResultIcon) this.elResultIcon.textContent = icon;
+    if (this.elResultTitle) this.elResultTitle.textContent = title;
+    if (this.elResultDesc) this.elResultDesc.textContent = desc;
+    if (this.elResultPayout) {
+      this.elResultPayout.textContent = payout;
+      this.elResultPayout.className = `result-payout-tag ${payoutClass}`;
+    }
+    this.elResultOverlay.style.display = 'flex';
+  }
+
+  /**
+   * 點擊確認後：清空檯面上所有手牌並重新開始下注
+   */
+  confirmAndClearTable() {
+    if (this.elResultOverlay) this.elResultOverlay.style.display = 'none';
+
     this.gameState = 'BETTING';
-    this.currentBet = 0; // 每一個牌局結束後重設注額，要求重新下注
-    this.showToast(message, type);
+    this.currentBet = 0; // 清空當前下注
+    this.dealerCards = []; // 清空莊家桌面
+    this.activeSeatIndex = -1;
+
+    // 清空所有座位手牌
+    this.seats.forEach(s => {
+      s.cards = [];
+      s.status = 'WAITING';
+      s.bet = 0;
+    });
+
+    this.sound.playChipClink();
     this.updateHUD();
     this.render();
   }
@@ -539,10 +684,11 @@ export class TableSimulator {
   }
 
   showHintToast() {
-    if (this.gameState !== 'PLAYER_TURN') return;
+    if (this.gameState !== 'SEATS_TURN' || this.activeSeatIndex !== this.playerSeatIndex) return;
+    const playerSeat = this.seats[this.playerSeatIndex];
     const remainingDecks = this.deck.getRemainingDecks();
     const tc = this.counter.getTrueCount(remainingDecks);
-    const optimal = StrategyEngine.getOptimalDecision(this.playerCards, this.dealerCards[0], tc, this.rules);
+    const optimal = StrategyEngine.getOptimalDecision(playerSeat.cards, this.dealerCards[0], tc, this.rules);
 
     this.showToast(`💡 教練指引：建議「${optimal.action}」 - ${optimal.reason}`, 'hint');
   }
@@ -557,9 +703,7 @@ export class TableSimulator {
 
     const toast = document.createElement('div');
     toast.className = `coach-toast ${type}`;
-    toast.innerHTML = `
-      <div class="toast-content" style="white-space: pre-line;">${message}</div>
-    `;
+    toast.innerHTML = `<div class="toast-content" style="white-space: pre-line;">${message}</div>`;
     document.body.appendChild(toast);
 
     setTimeout(() => {
@@ -583,13 +727,15 @@ export class TableSimulator {
     this.elCoachBanner.style.display = 'flex';
     this.elCoachBanner.classList.remove('hidden-mode');
 
+    const playerSeat = this.seats[this.playerSeatIndex];
+
     if (this.gameState === 'BETTING') {
       if (this.elCoachRecAction) this.elCoachRecAction.innerHTML = '<span style="color: var(--gold-primary);">下注階段</span>';
       if (this.elCoachRecReason) this.elCoachRecReason.textContent = '請點選籌碼下注，點擊「發牌 (Deal)」開始牌局。';
-    } else if (this.gameState === 'PLAYER_TURN' && this.playerCards.length > 0 && this.dealerCards.length > 0) {
+    } else if (this.gameState === 'SEATS_TURN' && this.activeSeatIndex === this.playerSeatIndex && playerSeat.cards.length >= 2 && this.dealerCards.length >= 1) {
       const remainingDecks = this.deck.getRemainingDecks();
       const tc = this.counter.getTrueCount(remainingDecks);
-      const optimal = StrategyEngine.getOptimalDecision(this.playerCards, this.dealerCards[0], tc, this.rules);
+      const optimal = StrategyEngine.getOptimalDecision(playerSeat.cards, this.dealerCards[0], tc, this.rules);
 
       const actionMap = {
         'H': { text: '要牌 (Hit)', btn: this.btnHit },
@@ -617,8 +763,8 @@ export class TableSimulator {
         this.btnHit.classList.add('btn-optimal-highlight');
       }
     } else {
-      if (this.elCoachRecAction) this.elCoachRecAction.innerHTML = '<span style="color: var(--text-muted);">結算中</span>';
-      if (this.elCoachRecReason) this.elCoachRecReason.textContent = '牌局已結束，準備進行下一把下注。';
+      if (this.elCoachRecAction) this.elCoachRecAction.innerHTML = '<span style="color: var(--text-muted);">等待其他座位行動中...</span>';
+      if (this.elCoachRecReason) this.elCoachRecReason.textContent = '當前由同桌其他玩家或莊家行動，請觀察跑數 (RC) 變化。';
     }
   }
 
@@ -626,7 +772,7 @@ export class TableSimulator {
     if (this.elBankroll) this.elBankroll.textContent = `$${this.bankroll}`;
     if (this.elCurrentBet) this.elCurrentBet.textContent = `$${this.currentBet}`;
 
-    // 渲染下注圈籌碼堆疊視覺
+    // 下注圈籌碼堆疊渲染
     if (this.elBetChipsStack) {
       if (this.currentBet > 0) {
         this.elBetChipsStack.innerHTML = `<div class="bet-chip-badge">$${this.currentBet}</div>`;
@@ -635,88 +781,84 @@ export class TableSimulator {
       }
     }
 
-    // 渲染莊家手牌
+    // 渲染莊家桌面
     if (this.elDealerCards) {
       this.elDealerCards.innerHTML = '';
-      this.dealerCards.forEach((card, idx) => {
-        const isFaceUp = (this.gameState !== 'PLAYER_TURN') || idx === 0;
-        this.elDealerCards.appendChild(card.renderDOM(isFaceUp));
-      });
+      if (this.dealerCards.length === 0) {
+        this.elDealerBadge.textContent = '莊家: 0 點';
+      } else {
+        this.dealerCards.forEach((card, idx) => {
+          const isFaceUp = (this.gameState === 'DEALER_TURN' || this.gameState === 'ROUND_OVER') || idx === 0;
+          this.elDealerCards.appendChild(card.renderDOM(isFaceUp));
+        });
 
-      if (this.dealerCards.length > 0) {
-        if (this.gameState === 'PLAYER_TURN') {
-          this.elDealerBadge.textContent = `莊家: ${this.dealerCards[0].getValue()} + ? 點`;
-        } else {
+        if (this.gameState === 'DEALER_TURN' || this.gameState === 'ROUND_OVER') {
           const evalD = StrategyEngine.evaluateHand(this.dealerCards);
           this.elDealerBadge.textContent = `莊家: ${evalD.total} 點 ${evalD.isSoft ? '(軟)' : ''}`;
+        } else {
+          this.elDealerBadge.textContent = `莊家: ${this.dealerCards[0].getValue()} + ? 點`;
         }
-      } else {
-        this.elDealerBadge.textContent = '莊家: 0 點';
       }
     }
 
-    // 渲染玩家手牌
-    if (this.elPlayerCards) {
-      this.elPlayerCards.innerHTML = '';
-      this.playerCards.forEach(card => {
-        this.elPlayerCards.appendChild(card.renderDOM(true));
+    // 渲染動態多座位手牌區域
+    if (this.elSeatsContainer) {
+      this.elSeatsContainer.innerHTML = '';
+
+      this.seats.forEach((seat, idx) => {
+        const isPlayer = !seat.isAI;
+        const isActive = (this.activeSeatIndex === idx);
+
+        const spotEl = document.createElement('div');
+        spotEl.className = `player-spot ${isPlayer ? 'seat-player' : 'seat-ai'} ${isActive ? 'seat-active' : ''}`;
+
+        // 徽章點數
+        const badgeEl = document.createElement('div');
+        badgeEl.className = 'hand-badge';
+        if (seat.cards.length === 0) {
+          badgeEl.textContent = `${seat.name}: 0 點`;
+        } else {
+          const ev = StrategyEngine.evaluateHand(seat.cards);
+          badgeEl.textContent = `${seat.name}: ${ev.total} 點 ${ev.isSoft ? '(軟)' : ''} ${seat.status === 'BUST' ? '💥' : (seat.status === 'BLACKJACK' ? '👑' : '')}`;
+        }
+        spotEl.appendChild(badgeEl);
+
+        // 卡牌列
+        const cardsRow = document.createElement('div');
+        cardsRow.className = 'cards-row';
+        seat.cards.forEach(card => {
+          cardsRow.appendChild(card.renderDOM(true));
+        });
+        spotEl.appendChild(cardsRow);
+
+        this.elSeatsContainer.appendChild(spotEl);
       });
-
-      if (this.playerCards.length > 0) {
-        const evalP = StrategyEngine.evaluateHand(this.playerCards);
-        this.elPlayerBadge.textContent = `玩家: ${evalP.total} 點 ${evalP.isSoft ? '(軟牌)' : ''}`;
-      } else {
-        this.elPlayerBadge.textContent = '玩家: 0 點';
-      }
-    }
-
-    // 渲染 AI 玩家 1 (Seat 1)
-    if (this.elAi1Cards && this.enableAIPlayers) {
-      this.elAi1Cards.innerHTML = '';
-      this.ai1Cards.forEach(card => this.elAi1Cards.appendChild(card.renderDOM(true)));
-      if (this.ai1Cards.length > 0) {
-        const ev = StrategyEngine.evaluateHand(this.ai1Cards);
-        this.elAi1Badge.textContent = `AI老王: ${ev.total}點`;
-      }
-    }
-
-    // 渲染 AI 玩家 2 (Seat 3)
-    if (this.elAi2Cards && this.enableAIPlayers) {
-      this.elAi2Cards.innerHTML = '';
-      this.ai2Cards.forEach(card => this.elAi2Cards.appendChild(card.renderDOM(true)));
-      if (this.ai2Cards.length > 0) {
-        const ev = StrategyEngine.evaluateHand(this.ai2Cards);
-        this.elAi2Badge.textContent = `AI小陳: ${ev.total}點`;
-      }
     }
 
     // 按鈕可用性更新
-    const isBetting = this.gameState === 'BETTING';
-    const isPlaying = this.gameState === 'PLAYER_TURN';
+    const isBetting = (this.gameState === 'BETTING');
+    const isMyTurn = (this.gameState === 'SEATS_TURN' && this.activeSeatIndex === this.playerSeatIndex);
+    const pCards = this.seats[this.playerSeatIndex]?.cards || [];
 
     if (this.btnDeal) {
       this.btnDeal.disabled = !isBetting || this.currentBet <= 0;
-      if (isBetting && this.currentBet > 0) {
-        this.btnDeal.classList.add('pulse-glow');
-      } else {
-        this.btnDeal.classList.remove('pulse-glow');
-      }
+      if (isBetting && this.currentBet > 0) this.btnDeal.classList.add('pulse-glow');
+      else this.btnDeal.classList.remove('pulse-glow');
     }
 
     if (this.btnClearBet) this.btnClearBet.disabled = !isBetting || this.currentBet === 0;
     if (this.btnRebet) this.btnRebet.disabled = !isBetting || this.lastBet === 0 || this.bankroll < this.lastBet;
     if (this.btnDoubleBet) this.btnDoubleBet.disabled = !isBetting || this.bankroll < (this.currentBet > 0 ? this.currentBet * 2 : this.selectedChip * 2);
 
-    if (this.btnHit) this.btnHit.disabled = !isPlaying;
-    if (this.btnStand) this.btnStand.disabled = !isPlaying;
-    if (this.btnDouble) this.btnDouble.disabled = !isPlaying || this.playerCards.length !== 2;
+    if (this.btnHit) this.btnHit.disabled = !isMyTurn;
+    if (this.btnStand) this.btnStand.disabled = !isMyTurn;
+    if (this.btnDouble) this.btnDouble.disabled = !isMyTurn || pCards.length !== 2 || this.bankroll < this.currentBet;
     if (this.btnSplit) {
-      const isPair = this.playerCards.length === 2 && this.playerCards[0].getValue() === this.playerCards[1].getValue();
-      this.btnSplit.disabled = !isPlaying || !isPair;
+      const isPair = pCards.length === 2 && pCards[0].getValue() === pCards[1].getValue();
+      this.btnSplit.disabled = !isMyTurn || !isPair || this.bankroll < this.currentBet;
     }
-    if (this.btnSurrender) this.btnSurrender.disabled = !isPlaying || this.playerCards.length !== 2 || !this.rules.lateSurrender;
+    if (this.btnSurrender) this.btnSurrender.disabled = !isMyTurn || pCards.length !== 2 || !this.rules.lateSurrender;
 
-    // 渲染教練指引與高亮
     this.renderCoachGuidance();
   }
 }
