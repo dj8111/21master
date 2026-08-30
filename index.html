@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>21Master - 21點專業學習與算牌訓練平台 (Blackjack Pro & Card Counting Simulator)</title>
+  <meta name="description" content="現代高奢科技暗黑風格 21 點互動學習平台，具備擬真對賭模擬器、Hi-Lo 算牌記憶考核、全策略矩陣填空與即時期望值 (EV) 教練指引。">
+  
+  <!-- CSS Stylesheets -->
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/table.css">
+  <link rel="stylesheet" href="css/counting.css">
+  <link rel="stylesheet" href="css/strategy.css">
+  <link rel="stylesheet" href="css/modal.css">
+</head>
+<body>
+
+  <!-- 頂部高奢導航列 (Glassmorphic Header) -->
+  <header class="app-header">
+    <a href="#" class="brand-container">
+      <div class="brand-logo">21</div>
+      <div>
+        <h1 class="brand-title">21Master</h1>
+      </div>
+      <span class="brand-badge">PRO SIMULATOR</span>
+    </a>
+
+    <nav class="nav-tabs" role="tablist">
+      <button class="nav-tab-btn active" data-tab="table" role="tab" id="tab-btn-table">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"/></svg>
+        檯面對賭模擬
+      </button>
+      <button class="nav-tab-btn" data-tab="counting" role="tab" id="tab-btn-counting">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+        算牌記憶考核
+      </button>
+      <button class="nav-tab-btn" data-tab="strategy" role="tab" id="tab-btn-strategy">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+        基本策略測驗
+      </button>
+      <button class="nav-tab-btn" data-tab="stats" role="tab" id="tab-btn-stats">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        學習數據與成就
+      </button>
+    </nav>
+
+    <div class="header-actions">
+      <button class="icon-btn active" id="btn-toggle-sound" title="音效切換">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
+      </button>
+      <button class="icon-btn" id="btn-open-settings" title="賭規自訂設定">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- 主要內容區 (Main Content) -->
+  <main class="main-content">
+    
+    <!-- Tab 1: 模擬對賭檯面 -->
+    <section class="tab-pane active" id="pane-table">
+      <div class="table-container">
+        
+        <!-- 頂部輔助控制列 (模式切換) -->
+        <div class="table-top-bar">
+          <div class="mode-toggles-bar">
+            <button class="btn btn-secondary" id="btn-toggle-coach">
+              <span class="coach-status-dot off"></span> 🛡️ 教練模式 (Coach Mode: <b id="coach-status-text">關閉</b>)
+            </button>
+            <button class="btn btn-secondary" id="btn-toggle-hud">👁️ 算牌 HUD (關閉)</button>
+            <button class="btn btn-secondary" id="btn-hint">💡 策略分析 (Hint)</button>
+          </div>
+        </div>
+
+        <!-- 半圓形高奢賭桌主體 (所有資訊與操作整合於桌面上) -->
+        <div class="casino-table">
+          <div class="table-felt-pattern">
+            <div class="felt-text-main">BLACKJACK PAYS 3 TO 2</div>
+            <div class="felt-text-sub">Dealer must stand on 17 and draw to 16 • Insurance pays 2 to 1</div>
+          </div>
+
+          <!-- 桌上左上角：籌碼餘額與當前下注儀表板 -->
+          <div class="tabletop-bankroll-hud">
+            <div class="table-hud-stat">
+              <span class="stat-label">籌碼餘額 BANKROLL</span>
+              <span class="stat-value gold" id="table-bankroll" style="font-size: 1.3rem;">$1000</span>
+            </div>
+            <div class="table-hud-divider"></div>
+            <div class="table-hud-stat">
+              <span class="stat-label">當前下注 CURRENT BET</span>
+              <span class="stat-value cyan" id="table-current-bet" style="font-size: 1.3rem;">$0</span>
+            </div>
+          </div>
+
+          <!-- 桌上右上角：牌靴狀態 -->
+          <div class="dealer-shoe-box">
+            <span class="stat-label">牌靴剩餘 <b id="shoe-decks-text" style="color: #fff;">6 副</b></span>
+            <div class="shoe-visual-meter">
+              <div class="shoe-fill" id="shoe-fill-bar"></div>
+            </div>
+          </div>
+
+          <!-- 莊家手牌區域 -->
+          <div class="dealer-area">
+            <div class="hand-badge" id="dealer-hand-badge">莊家: 0 點</div>
+            <div class="cards-row" id="dealer-cards">
+              <div class="playing-card face-down"><div class="card-back"><div class="card-back-pattern"></div></div></div>
+            </div>
+          </div>
+
+          <!-- 桌中央：教練即時推薦指示牌 (預設關閉不顯示) -->
+          <div class="coach-live-banner" id="coach-live-banner" style="display: none;">
+            <div class="coach-banner-icon">🛡️</div>
+            <div class="coach-banner-text">
+              <div class="coach-rec-title">教練即時最優指引：<span id="coach-rec-action" class="rec-highlight">請先下注並發牌</span></div>
+              <div class="coach-rec-desc" id="coach-rec-reason">基本策略與算牌偏差將即時計算並同步高亮最優按鈕</div>
+            </div>
+          </div>
+
+          <!-- 中央下注圈與籌碼區 (Betting Spot) -->
+          <div class="table-center-bet-area" id="betting-area-wrapper">
+            <div class="betting-circle" id="table-betting-spot" title="點擊下注所選籌碼">
+              <div id="bet-chips-stack">
+                <span class="bet-placeholder-text">點擊下注</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 玩家手牌區域 -->
+          <div class="player-area">
+            <div class="player-spot active">
+              <div class="hand-badge" id="player-hand-badge">玩家: 0 點</div>
+              <div class="cards-row" id="player-cards"></div>
+            </div>
+          </div>
+
+          <!-- 桌內一體化操作底座 (籌碼選擇 / 下注調整 / 發牌 / 決策按鈕) -->
+          <div class="table-integrated-controls">
+            
+            <!-- 下注階段控制區 (Betting Controls) -->
+            <div class="tabletop-betting-row" id="tabletop-betting-row">
+              <div class="chip-rack">
+                <div class="chip chip-5 chip-selector" data-value="5">5</div>
+                <div class="chip chip-25 chip-selector selected" data-value="25">25</div>
+                <div class="chip chip-100 chip-selector" data-value="100">100</div>
+                <div class="chip chip-500 chip-selector" data-value="500">500</div>
+              </div>
+
+              <div class="bet-quick-actions">
+                <button class="btn btn-secondary btn-sm" id="btn-clear-bet" title="清除下注 (C)">清除 (C)</button>
+                <button class="btn btn-secondary btn-sm" id="btn-double-bet" title="下注翻倍">加倍 (2x)</button>
+                <button class="btn btn-gold btn-sm" id="btn-rebet" title="重複上一把下注 (R)">重複 (R)</button>
+              </div>
+
+              <button class="btn btn-primary btn-deal-table" id="btn-deal">
+                發牌 (DEAL) <span class="action-key-hint">Space</span>
+              </button>
+            </div>
+
+            <!-- 玩家回合決策按鈕群 (Player Actions) -->
+            <div class="tabletop-action-row" id="tabletop-action-row">
+              <button class="btn btn-cyan action-btn" id="btn-hit" disabled>
+                要牌 (Hit) <span class="action-key-hint">H</span>
+              </button>
+              <button class="btn btn-danger action-btn" id="btn-stand" disabled>
+                停牌 (Stand) <span class="action-key-hint">S</span>
+              </button>
+              <button class="btn btn-emerald action-btn" id="btn-double" disabled>
+                加倍 (Double) <span class="action-key-hint">D</span>
+              </button>
+              <button class="btn btn-secondary action-btn" id="btn-split" disabled>
+                分牌 (Split) <span class="action-key-hint">P</span>
+              </button>
+              <button class="btn btn-secondary action-btn" id="btn-surrender" disabled>
+                投降 (Surrender) <span class="action-key-hint">R</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 算牌 HUD 顯示在最下面 (預設關閉不顯示) -->
+        <div class="counting-hud-panel" id="counting-hud-panel" style="display: none;">
+          <div class="hud-card">
+            <span class="stat-label">Running Count (RC 流水數)</span>
+            <span class="stat-value gold" id="hud-running-count">0</span>
+          </div>
+          <div class="hud-card">
+            <span class="stat-label">True Count (TC 真數)</span>
+            <span class="stat-value cyan" id="hud-true-count">0.0</span>
+          </div>
+          <div class="hud-card">
+            <span class="stat-label">牌靴高牌比例 (10-A)</span>
+            <span class="stat-value emerald" id="hud-high-ratio">38.5%</span>
+          </div>
+          <div class="hud-card">
+            <span class="stat-label">推薦 AP 下注額 (Kelly)</span>
+            <span class="stat-value" id="hud-suggested-bet">$25</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Tab 2: 算牌記憶考核營 -->
+    <section class="tab-pane" id="pane-counting">
+      <div class="drill-container">
+        <!-- 模式選擇 -->
+        <div class="drill-mode-selector">
+          <div class="mode-card active" data-mode="FLASHCARD">
+            <div class="mode-icon">⚡</div>
+            <div class="mode-title">閃卡秒算訓練</div>
+            <div class="mode-desc">單張與成對相消 (+1, 0, -1) 極速反射考核</div>
+          </div>
+          <div class="mode-card" data-mode="COUNTDOWN">
+            <div class="mode-icon">⏱️</div>
+            <div class="mode-title">52張倒數挑戰</div>
+            <div class="mode-desc">扣下一張暗牌，測驗整副牌跑數與暗牌反推</div>
+          </div>
+          <div class="mode-card" data-mode="DECK_ESTIMATION">
+            <div class="mode-icon">📐</div>
+            <div class="mode-title">牌靴厚度與真數</div>
+            <div class="mode-desc">目測棄牌盒厚度，訓練 RC 折算 TC 心算</div>
+          </div>
+          <div class="mode-card" data-mode="DEVIATIONS">
+            <div class="mode-icon">👑</div>
+            <div class="mode-title">Illustrious 18 偏差</div>
+            <div class="mode-desc">掌握真數改變時偏離基本策略的高階決策</div>
+          </div>
+        </div>
+
+        <!-- 訓練工作台 -->
+        <div class="drill-stage" id="drill-stage"></div>
+      </div>
+    </section>
+
+    <!-- Tab 3: 基本策略測驗 -->
+    <section class="tab-pane" id="pane-strategy">
+      <div class="strategy-container">
+        <div class="quiz-mode-nav">
+          <button class="quiz-nav-btn active" data-mode="FLASH">情境快問快答</button>
+          <button class="quiz-nav-btn" data-mode="MATRIX">全策略矩陣填空</button>
+          <button class="quiz-nav-btn" data-mode="WEAKNESS">4大易錯盲點突擊</button>
+        </div>
+
+        <div id="strategy-quiz-stage"></div>
+      </div>
+    </section>
+
+    <!-- Tab 4: 數據統計與成就 -->
+    <section class="tab-pane" id="pane-stats">
+      <div id="stats-view-container"></div>
+    </section>
+
+  </main>
+
+  <!-- 賭規自訂設定 Modal -->
+  <div class="modal-backdrop" id="settings-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">⚙️ 賭場規則設定</h3>
+        <button class="close-modal-btn" id="btn-close-settings">&times;</button>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">牌靴副數 (Decks):</label>
+        <select id="setting-num-decks" class="form-control">
+          <option value="1">1 副牌 (Single Deck)</option>
+          <option value="2">2 副牌 (Double Deck)</option>
+          <option value="6" selected>6 副牌 (Standard 6-Deck)</option>
+          <option value="8">8 副牌 (8-Deck Shoe)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">算牌演算法系統:</label>
+        <select id="setting-counting-system" class="form-control">
+          <option value="HILO" selected>Hi-Lo (最推薦主流)</option>
+          <option value="KO">KO (Knock-Out 非平衡)</option>
+          <option value="OMEGA2">Omega II (二級進階)</option>
+        </select>
+      </div>
+
+      <div class="toggle-row">
+        <span>莊家軟17規則 (H17 / S17)</span>
+        <label class="switch">
+          <input type="checkbox" id="setting-soft17">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.75rem; margin-bottom: 0.75rem;">開啟為 H17 (莊家軟17要牌，對賭場有利)；關閉為 S17 (莊家軟17停牌)。</p>
+
+      <div class="toggle-row">
+        <span>分牌後加倍 (DAS)</span>
+        <label class="switch">
+          <input type="checkbox" id="setting-das" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <span>遲投降 (Late Surrender)</span>
+        <label class="switch">
+          <input type="checkbox" id="setting-surrender" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <button class="btn btn-primary" id="btn-save-settings" style="width: 100%; margin-top: 1.5rem;">儲存並重新洗牌</button>
+    </div>
+  </div>
+
+  <!-- 主邏輯 JS 入口 (ES Modules) -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

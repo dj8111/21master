@@ -1,0 +1,304 @@
+/**
+ * counting.css - 算牌訓練營 (Card Counting Camp) 專屬測驗與視覺樣式
+ */
+
+.drill-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* 頂部訓練模式選擇器 */
+.drill-mode-selector {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.mode-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mode-card:hover {
+  border-color: var(--gold-primary);
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateY(-2px);
+}
+
+.mode-card.active {
+  border-color: var(--gold-primary);
+  background: rgba(245, 158, 11, 0.08);
+  box-shadow: 0 0 15px var(--gold-glow);
+}
+
+.mode-icon {
+  font-size: 1.8rem;
+}
+
+.mode-title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+.mode-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* 現代數學公式排版卡片 (Math Formula Card) */
+.math-formula-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid var(--border-glass-bright);
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius-md);
+  margin: 0.5rem 0;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.math-var {
+  font-weight: 700;
+  color: var(--cyan-accent);
+}
+
+.math-equal {
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.math-fraction {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.math-numerator {
+  color: var(--gold-primary);
+  font-weight: 700;
+  padding: 0 0.35rem;
+}
+
+.math-frac-line {
+  width: 100%;
+  height: 1.5px;
+  background: var(--border-glass-bright);
+  margin: 2px 0;
+}
+
+.math-denominator {
+  color: #fff;
+  font-weight: 600;
+  padding: 0 0.35rem;
+}
+
+/* 核心訓練工作區 (Drill Stage) */
+.drill-stage {
+  min-height: 420px;
+  background: var(--bg-glass-card);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 閃卡測驗展示區 (Flashcard Area) */
+.flashcard-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  min-height: 180px;
+}
+
+.flashcard-display .playing-card {
+  width: 120px;
+  height: 175px;
+  transform: scale(1.1);
+  margin-right: 0;
+}
+
+.flashcard-display .playing-card .card-rank {
+  font-size: 1.6rem;
+}
+
+.flashcard-display .playing-card .card-center {
+  font-size: 3.5rem;
+}
+
+/* 快速鍵按鈕群 (Quick Keypad: +1, 0, -1) */
+.counting-keypad {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+  max-width: 480px;
+  justify-content: center;
+}
+
+.keypad-btn {
+  flex: 1;
+  padding: 1.25rem 1rem;
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: 1.6rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  border: 1px solid var(--border-glass-bright);
+}
+
+.keypad-btn span.subtext {
+  font-size: 0.75rem;
+  font-family: var(--font-body);
+  color: var(--text-muted);
+}
+
+.keypad-btn.plus {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.keypad-btn.plus:hover {
+  background: rgba(16, 185, 129, 0.3);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+}
+
+.keypad-btn.zero {
+  background: rgba(148, 163, 184, 0.15);
+  color: #cbd5e1;
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+.keypad-btn.zero:hover {
+  background: rgba(148, 163, 184, 0.3);
+}
+
+.keypad-btn.minus {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.keypad-btn.minus:hover {
+  background: rgba(239, 68, 68, 0.3);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+}
+
+/* 牌靴厚度估算測驗專屬圖示 (Shoe Thickness Graphic) */
+.shoe-estimation-visual {
+  display: flex;
+  align-items: flex-end;
+  gap: 1.5rem;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 1.5rem 2.5rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-glass);
+  margin-bottom: 1.5rem;
+}
+
+.discard-tray-visual {
+  width: 140px;
+  height: 180px;
+  border: 4px solid #475569;
+  border-top: none;
+  background: rgba(15, 23, 42, 0.8);
+  position: relative;
+  display: flex;
+  flex-direction: column-reverse;
+  padding: 4px;
+}
+
+.tray-cards-stack {
+  width: 100%;
+  background: repeating-linear-gradient(
+    180deg,
+    #ffffff,
+    #ffffff 2px,
+    #94a3b8 2px,
+    #94a3b8 4px
+  );
+  border-radius: 2px;
+  transition: height 0.3s;
+}
+
+/* 倒數計時大數字 */
+.timer-hero {
+  font-family: var(--font-mono);
+  font-size: 3rem;
+  font-weight: 800;
+  color: var(--cyan-accent);
+  text-shadow: 0 0 20px var(--cyan-glow);
+  margin-bottom: 1rem;
+}
+
+.score-hero {
+  font-family: var(--font-mono);
+  font-size: 1.8rem;
+  color: var(--gold-primary);
+}
+
+/* ==================== 手機 RWD 適配 ==================== */
+@media (max-width: 768px) {
+  .drill-mode-selector {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+  .mode-card {
+    padding: 0.75rem;
+  }
+  .mode-icon {
+    font-size: 1.4rem;
+  }
+  .mode-title {
+    font-size: 0.95rem;
+  }
+  .mode-desc {
+    display: none; /* 手機簡潔顯示 */
+  }
+  .drill-stage {
+    padding: 1rem 0.5rem;
+    min-height: 360px;
+  }
+  .flashcard-display .playing-card {
+    width: 90px;
+    height: 130px;
+  }
+  .flashcard-display .playing-card .card-rank { font-size: 1.2rem; }
+  .flashcard-display .playing-card .card-center { font-size: 2.4rem; }
+  .counting-keypad {
+    gap: 0.4rem;
+  }
+  .keypad-btn {
+    padding: 0.85rem 0.4rem;
+    font-size: 1.3rem;
+  }
+  .keypad-btn span.subtext {
+    font-size: 0.65rem;
+  }
+}

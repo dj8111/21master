@@ -1,0 +1,66 @@
+/**
+ * tokens.css - 現代高奢科技暗黑色彩、玻璃擬態與設計系統 Tokens
+ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Outfit:wght@500;600;700;800&family=Noto+Sans+TC:wght@400;500;700&display=swap');
+
+:root {
+  /* 背景與基底色調 (Obsidian Dark Navy) */
+  --bg-primary: #080c14;
+  --bg-surface: #0f172a;
+  --bg-surface-elevated: #1e293b;
+  --bg-glass: rgba(15, 23, 42, 0.75);
+  --bg-glass-card: rgba(30, 41, 59, 0.65);
+  --border-glass: rgba(255, 255, 255, 0.08);
+  --border-glass-bright: rgba(255, 255, 255, 0.18);
+
+  /* 賭桌毛氈與主題品牌色 (Emerald Casino Felt & Cyber Accents) */
+  --felt-dark: #022c22;
+  --felt-light: #064e3b;
+  --felt-accent: #059669;
+  --felt-glow: rgba(16, 185, 129, 0.25);
+  
+  /* 品牌裝飾與金屬色 */
+  --gold-primary: #f59e0b;
+  --gold-glow: rgba(245, 158, 11, 0.35);
+  --gold-light: #fef3c7;
+  --gold-gradient: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+  
+  --cyan-accent: #38bdf8;
+  --cyan-glow: rgba(56, 189, 248, 0.3);
+
+  /* 狀態顏色 */
+  --color-success: #10b981;
+  --color-danger: #ef4444;
+  --color-warning: #f59e0b;
+  --color-info: #3b82f6;
+
+  /* 文字顏色 */
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-gold: #fde68a;
+
+  /* 字體家族 */
+  --font-heading: 'Outfit', 'Noto Sans TC', sans-serif;
+  --font-body: 'Inter', 'Noto Sans TC', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* 陰影與光暈 */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.7);
+  --shadow-glow-gold: 0 0 20px rgba(245, 158, 11, 0.4);
+  --shadow-glow-emerald: 0 0 25px rgba(16, 185, 129, 0.35);
+  --shadow-glow-cyan: 0 0 20px rgba(56, 189, 248, 0.4);
+
+  /* 圓角與間距 */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+
+  /* 轉場 */
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
