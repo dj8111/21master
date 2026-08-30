@@ -310,11 +310,12 @@
   100% { transform: scale(1); opacity: 1; }
 }
 
-/* 玩家手牌區域 */
+/* 玩家手牌區域 (支援多座位) */
 .player-area {
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-end;
+  gap: 1.5rem;
   width: 100%;
   z-index: 5;
 }
@@ -325,6 +326,19 @@
   align-items: center;
   gap: 0.4rem;
   position: relative;
+  transition: all var(--transition-fast);
+}
+
+.player-spot.ai-spot {
+  opacity: 0.85;
+  transform: scale(0.92);
+}
+
+.player-spot.ai-spot .hand-badge {
+  background: rgba(15, 23, 42, 0.9);
+  border-color: rgba(56, 189, 248, 0.4);
+  color: var(--cyan-accent);
+  font-size: 0.75rem;
 }
 
 /* 撲克牌 (Playing Cards) */

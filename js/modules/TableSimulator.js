@@ -29,9 +29,12 @@ export class TableSimulator {
     this.gameState = 'BETTING'; // 'BETTING', 'PLAYER_TURN', 'DEALER_TURN', 'RESOLVED'
     this.coachMode = false; // 預設關閉教練模式
     this.showHUD = false; // 預設關閉算牌 HUD
+    this.enableAIPlayers = false; // 多座位 AI 玩家模式
 
     this.dealerCards = [];
     this.playerCards = [];
+    this.ai1Cards = []; // Seat 1
+    this.ai2Cards = []; // Seat 3
     this.splitHands = [];
     this.activeHandIndex = 0;
 
@@ -51,6 +54,12 @@ export class TableSimulator {
     this.elDealerBadge = document.getElementById('dealer-hand-badge');
     this.elPlayerCards = document.getElementById('player-cards');
     this.elPlayerBadge = document.getElementById('player-hand-badge');
+    this.elAi1Spot = document.getElementById('ai1-spot');
+    this.elAi2Spot = document.getElementById('ai2-spot');
+    this.elAi1Cards = document.getElementById('ai1-cards');
+    this.elAi2Cards = document.getElementById('ai2-cards');
+    this.elAi1Badge = document.getElementById('ai1-hand-badge');
+    this.elAi2Badge = document.getElementById('ai2-hand-badge');
     this.elShoeFill = document.getElementById('shoe-fill-bar');
     this.elShoeDecksText = document.getElementById('shoe-decks-text');
     this.elBetSpot = document.getElementById('table-betting-spot');
@@ -119,6 +128,15 @@ export class TableSimulator {
       const dot = this.btnToggleCoach.querySelector('.coach-status-dot');
       if (dot) dot.classList.toggle('off', !this.coachMode);
       this.renderCoachGuidance();
+    });
+
+    this.btnToggleAI = document.getElementById('btn-toggle-ai');
+    this.btnToggleAI?.addEventListener('click', () => {
+      this.enableAIPlayers = !this.enableAIPlayers;
+      this.btnToggleAI.classList.toggle('active', this.enableAIPlayers);
+      if (this.elAi1Spot) this.elAi1Spot.style.display = this.enableAIPlayers ? 'flex' : 'none';
+      if (this.elAi2Spot) this.elAi2Spot.style.display = this.enableAIPlayers ? 'flex' : 'none';
+      this.showToast(this.enableAIPlayers ? '👥 已開啟 2 位同桌 AI 玩家（多座位發牌干擾模式）' : '👤 已切換為單人專注模式', 'info');
     });
 
     // 點擊籌碼按鈕直接將該籌碼金額加到下注圈
@@ -228,11 +246,13 @@ export class TableSimulator {
       return;
     }
 
-    this.lastBet = this.currentBet; // 記錄本輪下注以供下一輪 Rebet
+    this.lastBet = this.currentBet;
     this.bankroll -= this.currentBet;
     this.gameState = 'PLAYER_TURN';
     this.dealerCards = [];
     this.playerCards = [];
+    this.ai1Cards = [];
+    this.ai2Cards = [];
 
     if (this.deck.needsReshuffle) {
       this.deck.initShoe();
@@ -240,35 +260,70 @@ export class TableSimulator {
       this.showToast('牌靴已達切牌深度，已重新洗牌！', 'info');
     }
 
-    // 發牌序列 (Player 1 -> Dealer 1 -> Player 2 -> Dealer 2[Face Down])
-    const p1 = this.deck.deal();
-    this.playerCards.push(p1);
-    this.counter.processCard(p1);
-    this.sound.playCardSlide();
+    // 發牌流程 (支援多座位 AI 玩家)
+    if (this.enableAIPlayers) {
+      // Round 1: AI1 -> Player -> AI2 -> Dealer(Up)
+      this.ai1Cards.push(this.dealCardWithCount());
+      setTimeout(() => {
+        this.playerCards.push(this.dealCardWithCount());
+        setTimeout(() => {
+          this.ai2Cards.push(this.dealCardWithCount());
+          setTimeout(() => {
+            this.dealerCards.push(this.dealCardWithCount());
+            
+            // Round 2
+            setTimeout(() => {
+              this.ai1Cards.push(this.dealCardWithCount());
+              setTimeout(() => {
+                this.playerCards.push(this.dealCardWithCount());
+                setTimeout(() => {
+                  this.ai2Cards.push(this.dealCardWithCount());
+                  setTimeout(() => {
+                    const d2 = this.deck.deal(); // 莊家暗牌
+                    this.dealerCards.push(d2);
+                    this.sound.playCardSlide();
+                    this.checkInitialBlackjack();
+                    this.updateHUD();
+                    this.render();
+                  }, 120);
+                }, 120);
+              }, 120);
+            }, 120);
 
-    setTimeout(() => {
-      const d1 = this.deck.deal();
-      this.dealerCards.push(d1);
-      this.counter.processCard(d1);
-      this.sound.playCardSlide();
+          }, 120);
+        }, 120);
+      }, 120);
+    } else {
+      // 單人模式
+      const p1 = this.dealCardWithCount();
+      this.playerCards.push(p1);
 
       setTimeout(() => {
-        const p2 = this.deck.deal();
-        this.playerCards.push(p2);
-        this.counter.processCard(p2);
-        this.sound.playCardSlide();
+        const d1 = this.dealCardWithCount();
+        this.dealerCards.push(d1);
 
         setTimeout(() => {
-          const d2 = this.deck.deal(); // 莊家暗牌 (不計入跑數，直到翻開)
-          this.dealerCards.push(d2);
-          this.sound.playCardSlide();
+          const p2 = this.dealCardWithCount();
+          this.playerCards.push(p2);
 
-          this.checkInitialBlackjack();
-          this.updateHUD();
-          this.render();
-        }, 200);
-      }, 200);
-    }, 200);
+          setTimeout(() => {
+            const d2 = this.deck.deal();
+            this.dealerCards.push(d2);
+            this.sound.playCardSlide();
+            this.checkInitialBlackjack();
+            this.updateHUD();
+            this.render();
+          }, 180);
+        }, 180);
+      }, 180);
+    }
+  }
+
+  dealCardWithCount() {
+    const card = this.deck.deal();
+    this.counter.processCard(card);
+    this.sound.playCardSlide();
+    return card;
   }
 
   checkInitialBlackjack() {
@@ -369,12 +424,36 @@ export class TableSimulator {
   }
 
   /**
-   * 莊家補牌流程 (直到 17 點以上)
+   * 莊家補牌流程 (若有 AI 玩家則先執行 AI 玩家回合)
    */
   runDealerTurn() {
     this.gameState = 'DEALER_TURN';
 
-    // 翻開暗牌並計入算牌
+    // 若開啟 AI 玩家模式，先執行 AI 玩家決策
+    if (this.enableAIPlayers) {
+      const runAiTurn = (cards, badgeEl, callback) => {
+        let ev = StrategyEngine.evaluateHand(cards);
+        if (ev.total < 16) {
+          setTimeout(() => {
+            cards.push(this.dealCardWithCount());
+            this.render();
+            runAiTurn(cards, badgeEl, callback);
+          }, 300);
+        } else {
+          callback();
+        }
+      };
+
+      runAiTurn(this.ai2Cards, this.elAi2Badge, () => {
+        this.executeDealerDraws();
+      });
+    } else {
+      this.executeDealerDraws();
+    }
+  }
+
+  executeDealerDraws() {
+    // 翻開莊家暗牌並計入算牌
     if (this.dealerCards.length >= 2) {
       this.counter.processCard(this.dealerCards[1]);
     }
@@ -410,21 +489,17 @@ export class TableSimulator {
     const dEval = StrategyEngine.evaluateHand(this.dealerCards);
 
     if (dEval.total > 21) {
-      // 莊家爆牌
       this.bankroll += this.currentBet * 2;
       this.sound.playWin();
       this.endRound(`莊家爆牌 (${dEval.total} 點)！玩家獲勝 +$${this.currentBet}`, 'win');
     } else if (pEval.total > dEval.total) {
-      // 玩家點數大
       this.bankroll += this.currentBet * 2;
       this.sound.playWin();
       this.endRound(`玩家 (${pEval.total} 點) 擊敗莊家 (${dEval.total} 點)！獲勝 +$${this.currentBet}`, 'win');
     } else if (pEval.total === dEval.total) {
-      // 平手
       this.bankroll += this.currentBet;
       this.endRound(`平手 (雙方皆為 ${pEval.total} 點)！退回注碼`, 'push');
     } else {
-      // 莊家大
       this.sound.playWrong();
       this.endRound(`莊家 (${dEval.total} 點) 贏過玩家 (${pEval.total} 點)`, 'lose');
     }
@@ -494,7 +569,6 @@ export class TableSimulator {
   }
 
   renderCoachGuidance() {
-    // 移除所有按鈕的推薦高亮
     [this.btnHit, this.btnStand, this.btnDouble, this.btnSplit, this.btnSurrender].forEach(btn => {
       btn?.classList.remove('btn-optimal-highlight');
     });
@@ -502,12 +576,10 @@ export class TableSimulator {
     if (!this.elCoachBanner) return;
 
     if (!this.coachMode) {
-      // 關閉教練模式時直接隱藏，不在牌桌上顯示
       this.elCoachBanner.style.display = 'none';
       return;
     }
 
-    // 開啟教練模式時顯示指示牌
     this.elCoachBanner.style.display = 'flex';
     this.elCoachBanner.classList.remove('hidden-mode');
 
@@ -539,11 +611,9 @@ export class TableSimulator {
         this.elCoachRecReason.textContent = optimal.reason;
       }
 
-      // 高亮最優推薦按鈕
       if (optInfo.btn && !optInfo.btn.disabled) {
         optInfo.btn.classList.add('btn-optimal-highlight');
       } else if (optimal.action === 'D' && this.btnHit && !this.btnHit.disabled) {
-        // 若不能加倍則退而高亮 Hit
         this.btnHit.classList.add('btn-optimal-highlight');
       }
     } else {
@@ -559,9 +629,7 @@ export class TableSimulator {
     // 渲染下注圈籌碼堆疊視覺
     if (this.elBetChipsStack) {
       if (this.currentBet > 0) {
-        this.elBetChipsStack.innerHTML = `
-          <div class="bet-chip-badge">$${this.currentBet}</div>
-        `;
+        this.elBetChipsStack.innerHTML = `<div class="bet-chip-badge">$${this.currentBet}</div>`;
       } else {
         this.elBetChipsStack.innerHTML = `<span class="bet-placeholder-text">點擊下注</span>`;
       }
@@ -599,6 +667,26 @@ export class TableSimulator {
         this.elPlayerBadge.textContent = `玩家: ${evalP.total} 點 ${evalP.isSoft ? '(軟牌)' : ''}`;
       } else {
         this.elPlayerBadge.textContent = '玩家: 0 點';
+      }
+    }
+
+    // 渲染 AI 玩家 1 (Seat 1)
+    if (this.elAi1Cards && this.enableAIPlayers) {
+      this.elAi1Cards.innerHTML = '';
+      this.ai1Cards.forEach(card => this.elAi1Cards.appendChild(card.renderDOM(true)));
+      if (this.ai1Cards.length > 0) {
+        const ev = StrategyEngine.evaluateHand(this.ai1Cards);
+        this.elAi1Badge.textContent = `AI老王: ${ev.total}點`;
+      }
+    }
+
+    // 渲染 AI 玩家 2 (Seat 3)
+    if (this.elAi2Cards && this.enableAIPlayers) {
+      this.elAi2Cards.innerHTML = '';
+      this.ai2Cards.forEach(card => this.elAi2Cards.appendChild(card.renderDOM(true)));
+      if (this.ai2Cards.length > 0) {
+        const ev = StrategyEngine.evaluateHand(this.ai2Cards);
+        this.elAi2Badge.textContent = `AI小陳: ${ev.total}點`;
       }
     }
 

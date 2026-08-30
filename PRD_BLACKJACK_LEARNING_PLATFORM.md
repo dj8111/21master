@@ -167,9 +167,22 @@ graph LR
   - *Pair 9,9 vs 莊家 7 (為什麼要 Stand 而不是 Split?)*
   - *Pair 4,4 vs 莊家 5, 6 (DAS 與 NDAS 的決策差異)*
 
----
+#### A4. 模擬賭桌多座位虛擬 AI 玩家干擾模式 (Multi-Seat AI Distraction)
+- **擬真賭場同桌氛圍**：支援開啟 Seat 1 (AI 玩家老王) 與 Seat 3 (AI 玩家小陳)，中央為使用者本家。
+- **動態算牌干擾**：發牌與補牌時由 AI 玩家共同分擔牌靴消耗，訓練玩家在多人混戰節奏中依然精準跟隨跑數 (RC)。
 
-## 4. 數據統計與遊戲化成就系統 (Analytics & Gamification)
+### 模組 D：凱利公式與破產風險率 (Risk of Ruin, RoR) 量化模擬器
+- **量化參數設定**：本金池 (Bankroll)、基本注額 (Unit Bet)、下注級距 (Bet Spread: 1:8 / 1:12 / 1:16)、模擬總手數 (2,000 ~ 10,000 手)。
+- **核心數學指標計算**：
+  - 理論小時期望獲利 (Hourly Win Rate / EV)
+  - 破產風險率 (Risk of Ruin, RoR %)
+  - 長線優勢確立手數 (N-Zero, N0)
+- **蒙地卡羅萬手資產走勢模擬折線圖**：使用 Canvas 實時繪製 5 條隨機漫步資產波動軌跡。
+
+### 模組 E：國際化多語系與社群分享 (i18n & Social Sharing)
+- **四國語系支援**：繁體中文 (預設 `tw`)、英文 (`en`)、日文 (`ja`)、簡體中文 (`cn`)。
+- **純前端 Canvas QR Code 與一鍵分享**：支援 X (Twitter)、Facebook、LINE、WhatsApp、Email 與行動裝置原生 Web Share API。
+- **PWA 支援 (Progressive Web App)**：支援離線安裝，iPhone / Android 可加入主畫面離線練習。
 
 ### 4.1 核心指標儀表板 (User Stats Dashboard)
 - **策略準確率 (Strategy Accuracy %)**：統計硬牌、軟牌、分牌、投降各維度準確率。

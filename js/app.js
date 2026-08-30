@@ -1,35 +1,56 @@
 /**
- * app.js - 21Master 應用程式主入口與模組協調中心
+ * app.js - 21Master 應用程式主入口 (含 i18n 語系引擎、PWA、RoR 與分享彈窗)
  */
+import { I18nManager } from './i18n/I18nManager.js';
 import { SoundEngine } from './engine/SoundEngine.js';
 import { Analytics } from './modules/Analytics.js';
 import { TableSimulator } from './modules/TableSimulator.js';
 import { CountingDrill } from './modules/CountingDrill.js';
 import { StrategyQuiz } from './modules/StrategyQuiz.js';
+import { RiskOfRuinSimulator } from './modules/RiskOfRuinSimulator.js';
+import { ShareModal } from './modules/ShareModal.js';
 
 class App {
   constructor() {
+    this.i18n = new I18nManager();
     this.sound = new SoundEngine();
     this.analytics = new Analytics();
 
     this.tableModule = null;
     this.countingModule = null;
     this.strategyModule = null;
+    this.rorModule = null;
+    this.shareModal = null;
 
     this.init();
   }
 
   init() {
+    this.i18n.init();
     this.initModules();
     this.bindNavigation();
     this.bindSettingsModal();
     this.bindSoundToggle();
+    this.bindLanguageSelector();
+    this.registerPWA();
   }
 
   initModules() {
     this.tableModule = new TableSimulator(this.sound, this.analytics);
     this.countingModule = new CountingDrill(this.sound, this.analytics);
     this.strategyModule = new StrategyQuiz(this.sound, this.analytics);
+    this.rorModule = new RiskOfRuinSimulator(this.i18n);
+    this.shareModal = new ShareModal(this.i18n);
+
+    // 語系變更時重新渲染各模組文字
+    this.i18n.subscribe(() => {
+      this.tableModule.renderCoachGuidance();
+      const currentActiveTab = document.querySelector('.nav-tab-btn.active')?.dataset.tab;
+      if (currentActiveTab === 'counting') this.countingModule.renderStage();
+      else if (currentActiveTab === 'strategy') this.strategyModule.renderStage();
+      else if (currentActiveTab === 'ror') this.rorModule.render(document.getElementById('pane-ror'));
+      else if (currentActiveTab === 'stats') this.analytics.renderStatsDOM(document.getElementById('stats-view-container'));
+    });
   }
 
   bindNavigation() {
@@ -49,16 +70,24 @@ class App {
           activePane.classList.add('active');
         }
 
-        // 當切換到特定 Tab 時觸發初次渲染
         if (targetTab === 'counting') {
           this.countingModule.renderStage();
         } else if (targetTab === 'strategy') {
           this.strategyModule.renderStage();
+        } else if (targetTab === 'ror') {
+          this.rorModule.render(document.getElementById('pane-ror'));
         } else if (targetTab === 'stats') {
           const container = document.getElementById('stats-view-container');
           this.analytics.renderStatsDOM(container);
         }
       });
+    });
+  }
+
+  bindLanguageSelector() {
+    const select = document.getElementById('select-lang');
+    select?.addEventListener('change', (e) => {
+      this.i18n.setLanguage(e.target.value);
     });
   }
 
@@ -92,7 +121,6 @@ class App {
     });
 
     btnSave?.addEventListener('click', () => {
-      // 讀取設定表單
       const decks = parseInt(document.getElementById('setting-num-decks').value, 10);
       const isH17 = document.getElementById('setting-soft17').checked;
       const das = document.getElementById('setting-das').checked;
@@ -105,7 +133,6 @@ class App {
       this.tableModule.rules.lateSurrender = surrender;
       this.tableModule.rules.countingSystem = system;
 
-      // 重新初始化牌靴
       this.tableModule.deck = new (this.tableModule.deck.constructor)(decks);
       this.tableModule.counter.numDecks = decks;
       this.tableModule.counter.system = system;
@@ -113,12 +140,21 @@ class App {
       this.tableModule.updateHUD();
 
       modal.classList.remove('open');
-      alert('賭規設定已更新，並已重新洗牌！');
+      alert(this.i18n.t('settings_save'));
     });
+  }
+
+  registerPWA() {
+    if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js').catch((err) => {
+          console.log('SW registration error:', err);
+        });
+      });
+    }
   }
 }
 
-// 頁面載入後啟動
 document.addEventListener('DOMContentLoaded', () => {
   window.app = new App();
 });
