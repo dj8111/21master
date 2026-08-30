@@ -37,11 +37,20 @@ export class Deck {
   }
 
   /**
-   * Fisher-Yates 現代隨機洗牌演算法
+   * 密碼學安全 Fisher-Yates 隨機洗牌演算法 (CSPRNG)
    */
   shuffle() {
+    const getRandomIndex = (max) => {
+      if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
+        const array = new Uint32Array(1);
+        window.crypto.getRandomValues(array);
+        return array[0] % max;
+      }
+      return Math.floor(Math.random() * max);
+    };
+
     for (let i = this.cards.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      const j = getRandomIndex(i + 1);
       [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
     }
   }

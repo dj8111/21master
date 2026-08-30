@@ -89,6 +89,21 @@ export class Analytics {
     return { rank: 'Lv 1. 賭場綠角 (Casino Tourist)', desc: '剛進入 21 點數學世界的新手', color: '#64748b' };
   }
 
+  escapeHTML(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  resetAllStats() {
+    this.stats = this.getDefaultStats();
+    this.saveStats();
+  }
+
   renderStatsDOM(container) {
     if (!container) return;
 
@@ -132,12 +147,17 @@ export class Analytics {
         </div>
 
         <div class="glass-card">
-          <h3 style="font-family: var(--font-heading); color: var(--gold-primary); margin-bottom: 1rem;">📋 最近決策失誤檢討</h3>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="font-family: var(--font-heading); color: var(--gold-primary);">📋 最近決策失誤檢討</h3>
+            <button id="btn-reset-stats" class="btn btn-secondary btn-sm" style="color: var(--color-danger); border-color: rgba(239, 68, 68, 0.3);">
+              重置所有統計
+            </button>
+          </div>
           ${this.stats.mistakeLog.length === 0 ? '<p style="color: var(--text-muted);">目前尚無失誤紀錄，保持完美！</p>' : `
             <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.5rem;">
               ${this.stats.mistakeLog.slice(0, 6).map(m => `
                 <li style="background: rgba(0,0,0,0.3); padding: 0.6rem 0.85rem; border-radius: var(--radius-sm); border-left: 3px solid var(--color-danger); font-size: 0.85rem;">
-                  ${m.reason}
+                  ${this.escapeHTML(m.reason)}
                 </li>
               `).join('')}
             </ul>
@@ -145,5 +165,12 @@ export class Analytics {
         </div>
       </div>
     `;
+
+    document.getElementById('btn-reset-stats')?.addEventListener('click', () => {
+      if (confirm('確定要清除所有學習與測驗統計數據嗎？')) {
+        this.resetAllStats();
+        this.renderStatsDOM(container);
+      }
+    });
   }
 }
