@@ -14,7 +14,16 @@ export class Card {
   constructor(suit, rank) {
     this.suit = suit; // SUITS object
     this.rank = rank; // '2'-'10', 'J', 'Q', 'K', 'A'
-    this.id = `${rank}_${suit.symbol}_${Math.random().toString(36).substr(2, 9)}`;
+    // 使用 CSPRNG 生成唯一 ID（同時相容瀏覽器與 Node.js 環境）
+    let randomSuffix;
+    try {
+      randomSuffix = Array.from(
+        (globalThis.crypto || require('crypto').webcrypto).getRandomValues(new Uint8Array(6))
+      ).map(b => b.toString(36)).join('');
+    } catch (e) {
+      randomSuffix = Math.random().toString(36).substr(2, 9);
+    }
+    this.id = `${rank}_${suit.symbol}_${randomSuffix}`;
   }
 
   /**

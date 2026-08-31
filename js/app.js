@@ -9,9 +9,11 @@ import { CountingDrill } from './modules/CountingDrill.js';
 import { StrategyQuiz } from './modules/StrategyQuiz.js';
 import { RiskOfRuinSimulator } from './modules/RiskOfRuinSimulator.js';
 import { ShareModal } from './modules/ShareModal.js';
+import { DisclaimerModal } from './modules/DisclaimerModal.js';
 
 class App {
   constructor() {
+    window.app = this;
     this.i18n = new I18nManager();
     this.sound = new SoundEngine();
     this.analytics = new Analytics();
@@ -21,6 +23,7 @@ class App {
     this.strategyModule = null;
     this.rorModule = null;
     this.shareModal = null;
+    this.disclaimerModal = null;
 
     this.init();
   }
@@ -36,20 +39,52 @@ class App {
   }
 
   initModules() {
-    this.tableModule = new TableSimulator(this.sound, this.analytics);
-    this.countingModule = new CountingDrill(this.sound, this.analytics);
-    this.strategyModule = new StrategyQuiz(this.sound, this.analytics);
-    this.rorModule = new RiskOfRuinSimulator(this.i18n);
-    this.shareModal = new ShareModal(this.i18n);
+    // 優先初始化免責聲明彈窗
+    try {
+      this.disclaimerModal = new DisclaimerModal(this.i18n, this.sound);
+    } catch (e) {
+      console.error('DisclaimerModal init error:', e);
+    }
+
+    try {
+      this.tableModule = new TableSimulator(this.sound, this.analytics);
+    } catch (e) {
+      console.error('TableSimulator init error:', e);
+    }
+
+    try {
+      this.countingModule = new CountingDrill(this.sound, this.analytics);
+    } catch (e) {
+      console.error('CountingDrill init error:', e);
+    }
+
+    try {
+      this.strategyModule = new StrategyQuiz(this.sound, this.analytics);
+    } catch (e) {
+      console.error('StrategyQuiz init error:', e);
+    }
+
+    try {
+      this.rorModule = new RiskOfRuinSimulator(this.i18n);
+    } catch (e) {
+      console.error('RiskOfRuinSimulator init error:', e);
+    }
+
+    try {
+      this.shareModal = new ShareModal(this.i18n);
+    } catch (e) {
+      console.error('ShareModal init error:', e);
+    }
 
     // 語系變更時重新渲染各模組文字
     this.i18n.subscribe(() => {
-      this.tableModule.renderCoachGuidance();
+      this.tableModule?.render?.();
+      this.tableModule?.renderCoachGuidance?.();
       const currentActiveTab = document.querySelector('.nav-tab-btn.active')?.dataset.tab;
-      if (currentActiveTab === 'counting') this.countingModule.renderStage();
-      else if (currentActiveTab === 'strategy') this.strategyModule.renderStage();
-      else if (currentActiveTab === 'ror') this.rorModule.render(document.getElementById('pane-ror'));
-      else if (currentActiveTab === 'stats') this.analytics.renderStatsDOM(document.getElementById('stats-view-container'));
+      if (currentActiveTab === 'counting') this.countingModule?.renderStage?.();
+      else if (currentActiveTab === 'strategy') this.strategyModule?.renderStage?.();
+      else if (currentActiveTab === 'ror') this.rorModule?.render?.(document.getElementById('pane-ror'));
+      else if (currentActiveTab === 'stats') this.analytics?.renderStatsDOM?.(document.getElementById('stats-view-container'));
     });
   }
 
@@ -71,14 +106,14 @@ class App {
         }
 
         if (targetTab === 'counting') {
-          this.countingModule.renderStage();
+          this.countingModule?.renderStage?.();
         } else if (targetTab === 'strategy') {
-          this.strategyModule.renderStage();
+          this.strategyModule?.renderStage?.();
         } else if (targetTab === 'ror') {
-          this.rorModule.render(document.getElementById('pane-ror'));
+          this.rorModule?.render?.(document.getElementById('pane-ror'));
         } else if (targetTab === 'stats') {
           const container = document.getElementById('stats-view-container');
-          this.analytics.renderStatsDOM(container);
+          this.analytics?.renderStatsDOM?.(container);
         }
       });
     });
@@ -109,15 +144,15 @@ class App {
     const btnSave = document.getElementById('btn-save-settings');
 
     btnSettings?.addEventListener('click', () => {
-      modal.classList.add('open');
+      modal?.classList.add('open');
     });
 
     btnClose?.addEventListener('click', () => {
-      modal.classList.remove('open');
+      modal?.classList.remove('open');
     });
 
     modal?.addEventListener('click', (e) => {
-      if (e.target === modal) modal.classList.remove('open');
+      if (e.target === modal) modal?.classList.remove('open');
     });
 
     btnSave?.addEventListener('click', () => {
@@ -127,19 +162,34 @@ class App {
       const surrender = document.getElementById('setting-surrender').checked;
       const system = document.getElementById('setting-counting-system').value;
 
-      this.tableModule.rules.numDecks = decks;
-      this.tableModule.rules.dealerHitsSoft17 = isH17;
-      this.tableModule.rules.doubleAfterSplit = das;
-      this.tableModule.rules.lateSurrender = surrender;
-      this.tableModule.rules.countingSystem = system;
+      if (this.tableModule) {
+        // 若遊戲進行中，強制重置至下注狀態
+        if (this.tableModule.gameState !== 'BETTING') {
+          this.tableModule.gameState = 'BETTING';
+          this.tableModule.currentBet = 0;
+          this.tableModule.dealerCards = [];
+          this.tableModule.activeSeatIndex = -1;
+          this.tableModule.seats.forEach(s => { s.cards = []; s.status = 'WAITING'; s.bet = 0; });
+          const overlay = document.getElementById('round-result-overlay');
+          if (overlay) overlay.style.display = 'none';
+        }
 
-      this.tableModule.deck = new (this.tableModule.deck.constructor)(decks);
-      this.tableModule.counter.numDecks = decks;
-      this.tableModule.counter.system = system;
-      this.tableModule.counter.initSystem();
-      this.tableModule.updateHUD();
+        this.tableModule.rules.numDecks = decks;
+        this.tableModule.rules.dealerHitsSoft17 = isH17;
+        this.tableModule.rules.doubleAfterSplit = das;
+        this.tableModule.rules.lateSurrender = surrender;
+        this.tableModule.rules.countingSystem = system;
 
-      modal.classList.remove('open');
+        // 正確傳入 numDecks 與 penetration 重建牌靴
+        this.tableModule.deck = new (this.tableModule.deck.constructor)(decks, this.tableModule.rules.penetration);
+        this.tableModule.counter.numDecks = decks;
+        this.tableModule.counter.system = system;
+        this.tableModule.counter.initSystem();
+        this.tableModule.updateHUD();
+        this.tableModule.render();
+      }
+
+      modal?.classList.remove('open');
       alert(this.i18n.t('settings_save'));
     });
   }
@@ -155,6 +205,19 @@ class App {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  window.app = new App();
-});
+function startApp() {
+  if (!window.app) {
+    try {
+      window.app = new App();
+    } catch (err) {
+      console.error('Failed to instantiate App:', err);
+    }
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', startApp);
+} else {
+  startApp();
+}
+

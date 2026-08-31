@@ -97,7 +97,19 @@ export const TRANSLATIONS = {
     settings_h17: "莊家軟17規則 (H17 / S17)",
     settings_das: "分牌後加倍 (DAS)",
     settings_surrender: "遲投降 (Late Surrender)",
-    settings_save: "儲存並重新洗牌"
+    settings_save: "儲存並重新洗牌",
+
+    // 進入前免責聲明 (精簡版)
+    disclaimer_modal_title: "⚖️ 提示與免責聲明",
+    disclaimer_subtitle: "歡迎使用 21Master，進入前請確認以下重要聲明：",
+    disclaimer_p1_title: "🎓 學術與教育研究",
+    disclaimer_p1_desc: "純屬博弈數學理論、機率統計與演算法學習展示，非真實賭博網站，無真錢交易。",
+    disclaimer_p2_title: "🚫 嚴禁非法賭博 (年滿18歲)",
+    disclaimer_p2_desc: "嚴禁用於任何非法賭博活動，使用者須符合當地法定成年年齡（18歲以上）。",
+    disclaimer_p3_title: "🛡️ 理性自負盈虧",
+    disclaimer_p3_desc: "任何實際博弈行為均伴隨資本風險，本平台不承擔任何外部財務損益責任。",
+    disclaimer_btn_enter: "我已詳閱並同意 (進入網站)",
+    disclaimer_btn_leave: "取消"
   },
 
   en: {
@@ -187,7 +199,19 @@ export const TRANSLATIONS = {
     settings_h17: "Dealer Soft 17 (H17 / S17)",
     settings_das: "Double After Split (DAS)",
     settings_surrender: "Late Surrender",
-    settings_save: "Save & Reshuffle"
+    settings_save: "Save & Reshuffle",
+
+    // Pre-entry Disclaimer
+    disclaimer_modal_title: "⚖️ Terms & Disclaimer",
+    disclaimer_subtitle: "Welcome to 21Master. Please confirm before proceeding:",
+    disclaimer_p1_title: "🎓 Academic & Educational",
+    disclaimer_p1_desc: "Designed purely for probability, math theory, and algorithm demonstration without real money.",
+    disclaimer_p2_title: "🚫 No Illegal Gambling (18+)",
+    disclaimer_p2_desc: "Strictly prohibited for illegal gambling. Users must be 18+ or legal age of majority.",
+    disclaimer_p3_title: "🛡️ Risk Acknowledgement",
+    disclaimer_p3_desc: "Gambling carries financial risks. 21Master assumes no liability for external outcomes.",
+    disclaimer_btn_enter: "I Agree & Enter 21Master",
+    disclaimer_btn_leave: "Cancel"
   },
 
   ja: {
@@ -277,7 +301,19 @@ export const TRANSLATIONS = {
     settings_h17: "ディーラーソフト17 (H17 / S17)",
     settings_das: "スプリット後ダブル (DAS)",
     settings_surrender: "レイトサレンダー",
-    settings_save: "保存してリシャッフル"
+    settings_save: "保存してリシャッフル",
+
+    // サイト利用前の免責事項
+    disclaimer_modal_title: "⚖️ 利用規約と免責事項",
+    disclaimer_subtitle: "21Master へようこそ。以下の重要事項を確認してください：",
+    disclaimer_p1_title: "🎓 学術・教育研究目的",
+    disclaimer_p1_desc: "確率数学とアルゴリズムの学習研究のみを目的とし、リアルマネーの取引はありません。",
+    disclaimer_p2_title: "🚫 違法賭博の禁止 (18歳以上)",
+    disclaimer_p2_desc: "違法賭博への利用を禁じます。利用者は18歳以上である必要があります。",
+    disclaimer_p3_title: "🛡️ 自己責任の承認",
+    disclaimer_p3_desc: "実際のギャンブルには資金リスクが伴います。本サイトは一切の損失責任を負いません。",
+    disclaimer_btn_enter: "同意して入室 (開始)",
+    disclaimer_btn_leave: "キャンセル"
   },
 
   cn: {
@@ -367,6 +403,18 @@ export const TRANSLATIONS = {
     settings_h17: "庄家软17规则 (H17 / S17)",
     settings_das: "分牌后加倍 (DAS)",
     settings_surrender: "迟投降 (Late Surrender)",
-    settings_save: "保存并重新洗牌"
+    settings_save: "保存并重新洗牌",
+
+    // 进入前免责声明
+    disclaimer_modal_title: "⚖️ 提示与免责声明",
+    disclaimer_subtitle: "欢迎使用 21Master，进入前请确认以下重要声明：",
+    disclaimer_p1_title: "🎓 学术与教育研究",
+    disclaimer_p1_desc: "纯属博弈数学理论、概率统计与算法学习展示，非真实赌博网站，无真钱交易。",
+    disclaimer_p2_title: "🚫 严禁非法赌博 (年满18岁)",
+    disclaimer_p2_desc: "严禁用于任何非法赌博活动，使用者须符合当地法定成年年龄（18岁以上）。",
+    disclaimer_p3_title: "🛡️ 理性自负盈亏",
+    disclaimer_p3_desc: "任何实际博弈行为均伴随资本风险，本平台不承担任何外部财务损益责任。",
+    disclaimer_btn_enter: "我已详阅并同意 (进入网站)",
+    disclaimer_btn_leave: "取消"
   }
 };

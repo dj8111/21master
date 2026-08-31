@@ -19,18 +19,103 @@
   <link rel="stylesheet" href="css/counting.css">
   <link rel="stylesheet" href="css/strategy.css">
   <link rel="stylesheet" href="css/modal.css">
-</head>
-<body>
 
-  <!-- 頂部高奢導航列 (Glassmorphic Header) -->
-  <header class="app-header">
-    <a href="#" class="brand-container">
-      <div class="brand-logo">21</div>
-      <div>
-        <h1 class="brand-title" data-i18n="brand_title">21Master</h1>
+  <script>
+    // 自動清除舊版本機快取以載入最新入口閘門
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for (let registration of registrations) registration.update();
+      });
+    }
+    if ('caches' in window) {
+      caches.keys().then(function(names) {
+        for (let name of names) {
+          if (name !== '21master-cache-v3') caches.delete(name);
+        }
+      });
+    }
+
+    // 當前 Session 內重新整理 (F5) 保持在主頁，關閉網頁後才需重新確認
+    (function() {
+      try {
+        if (sessionStorage.getItem('21master_session_disclaimer_accepted') === 'true') {
+          document.write('<style>#disclaimer-modal{display:none !important;} #main-app-content{display:block !important;} body{overflow:auto !important;}</style>');
+        }
+      } catch(e) {}
+    })();
+  </script>
+</head>
+<body class="modal-locked">
+
+  <!-- 進入前強制警示與免責聲明頁面 (Pre-entry Disclaimer Gate) -->
+  <div class="modal-backdrop disclaimer-backdrop gate-mode open" id="disclaimer-modal" style="display: flex;">
+    <div class="modal-card disclaimer-modal-card">
+      
+      <!-- 標題與圖示 -->
+      <div class="disclaimer-badge-header">
+        <div class="disclaimer-icon-badge">⚖️</div>
+        <div>
+          <h2 class="modal-title" style="font-size: 1.25rem;" data-i18n="disclaimer_modal_title">⚖️ 提示與免責聲明</h2>
+          <span style="font-size: 0.72rem; color: var(--gold-primary); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">21Master Notice</span>
+        </div>
       </div>
-      <span class="brand-badge" data-i18n="brand_badge">PRO 模擬器</span>
-    </a>
+
+      <p class="disclaimer-intro-text" data-i18n="disclaimer_subtitle" style="margin-bottom: 0.75rem;">
+        歡迎使用 21Master，進入前請確認以下重要聲明：
+      </p>
+
+      <!-- 3條精簡要點 (緊湊條列，無須滾動) -->
+      <div class="disclaimer-compact-list">
+        <div class="disclaimer-compact-item">
+          <span class="disclaimer-item-icon">🎓</span>
+          <div>
+            <b data-i18n="disclaimer_p1_title" style="color: var(--text-gold);">學術與教育研究</b>：
+            <span data-i18n="disclaimer_p1_desc" style="color: var(--text-secondary); font-size: 0.85rem;">純屬博弈數學理論、機率統計與演算法學習展示，非真實賭博網站，無真錢交易。</span>
+          </div>
+        </div>
+
+        <div class="disclaimer-compact-item">
+          <span class="disclaimer-item-icon">🚫</span>
+          <div>
+            <b data-i18n="disclaimer_p2_title" style="color: var(--text-gold);">嚴禁非法賭博 (年滿18歲)</b>：
+            <span data-i18n="disclaimer_p2_desc" style="color: var(--text-secondary); font-size: 0.85rem;">嚴禁用於任何非法賭博活動，使用者須符合當地法定成年年齡（18歲以上）。</span>
+          </div>
+        </div>
+
+        <div class="disclaimer-compact-item">
+          <span class="disclaimer-item-icon">🛡️</span>
+          <div>
+            <b data-i18n="disclaimer_p3_title" style="color: var(--text-gold);">理性自負盈虧</b>：
+            <span data-i18n="disclaimer_p3_desc" style="color: var(--text-secondary); font-size: 0.85rem;">任何實際博弈行為均伴隨資本風險，本平台不承擔任何外部財務損益責任。</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 操作按鈕群 (整合「我已同意」直接確認進入，或取消) -->
+      <div class="disclaimer-btn-group" style="margin-top: 1.15rem;">
+        <button class="btn btn-secondary" id="btn-disclaimer-leave" type="button" style="padding: 0.75rem 1.25rem;" onclick="window.rejectDisclaimerModal ? window.rejectDisclaimerModal() : alert('⚠️ 歡迎使用 21Master！請詳閱說明並點選「我已詳閱並同意 (進入網站)」以進入主畫面。')">
+          <span data-i18n="disclaimer_btn_leave">取消</span>
+        </button>
+        <button class="btn btn-primary btn-disclaimer-enter" id="btn-disclaimer-enter" type="button" onclick="window.acceptDisclaimerModal ? window.acceptDisclaimerModal() : (sessionStorage.setItem('21master_session_disclaimer_accepted','true'), document.getElementById('disclaimer-modal').style.display='none', document.getElementById('main-app-content').style.display='block', document.body.classList.remove('modal-locked'))">
+          <span data-i18n="disclaimer_btn_enter">我已詳閱並同意 (進入網站)</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 主網站內容 (只有在點選同意後才顯示) -->
+  <div id="main-app-content" style="display: none;">
+
+    <!-- 頂部高奢導航列 (Glassmorphic Header) -->
+    <header class="app-header">
+      <a href="#" class="brand-container">
+        <div class="brand-logo">21</div>
+        <div>
+          <h1 class="brand-title" data-i18n="brand_title">21Master</h1>
+        </div>
+        <span class="brand-badge" data-i18n="brand_badge">PRO 模擬器</span>
+      </a>
 
     <nav class="nav-tabs" role="tablist">
       <button class="nav-tab-btn active" data-tab="table" role="tab" id="tab-btn-table">
@@ -309,6 +394,7 @@
   <footer style="text-align: center; padding: 1.5rem 1rem; color: var(--text-muted); font-size: 0.75rem; border-top: 1px solid var(--border-glass); margin-top: 2rem;">
     <p style="margin-bottom: 0.35rem;">
       ⚠️ <b>免責聲明 (Educational Disclaimer)</b>：本平台僅供博弈數學理論、機率統計研究與前端程式開發學習分享，不提倡亦不推廣任何非法賭博行為。
+      <a href="#" id="link-open-disclaimer" style="color: var(--gold-primary); text-decoration: underline; margin-left: 0.5rem; font-weight: 600;" onclick="event.preventDefault(); window.openDisclaimerModal ? window.openDisclaimerModal() : (document.getElementById('disclaimer-modal').style.display='flex', document.getElementById('disclaimer-modal').classList.add('open'), document.getElementById('disclaimer-modal').classList.remove('fade-out'), document.body.classList.add('modal-locked'))">完整條款聲明</a>
     </p>
     <p style="color: var(--text-muted); opacity: 0.7;">
       © 2026 21Master. Open Source MIT License. Strictly for Educational & Research Purposes Only.
@@ -416,6 +502,8 @@
       <button class="btn btn-primary" id="btn-save-settings" style="width: 100%; margin-top: 1.5rem;" data-i18n="settings_save">儲存並重新洗牌</button>
     </div>
   </div>
+
+  </div><!-- /#main-app-content -->
 
   <!-- 主邏輯 JS 入口 (ES Modules) -->
   <script type="module" src="js/app.js"></script>

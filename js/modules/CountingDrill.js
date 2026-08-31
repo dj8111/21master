@@ -314,8 +314,15 @@ export class CountingDrill {
       </div>
     `;
 
-    document.getElementById('btn-submit-countdown-rc')?.addEventListener('click', () => {
-      const userRC = parseInt(document.getElementById('input-final-rc').value, 10);
+    const inputRC = document.getElementById('input-final-rc');
+    const submitRC = () => {
+      const valStr = inputRC?.value.trim();
+      if (!valStr || isNaN(parseInt(valStr, 10))) {
+        alert('⚠️ 請輸入算得的最終 Running Count (流水數整數值)！');
+        inputRC?.focus();
+        return;
+      }
+      const userRC = parseInt(valStr, 10);
       const isCorrect = (userRC === this.runningTotal);
 
       if (isCorrect) this.sound.playWin();
@@ -347,7 +354,13 @@ export class CountingDrill {
       `;
 
       document.getElementById('btn-retry-countdown')?.addEventListener('click', () => this.renderCountdownIntro());
+    };
+
+    document.getElementById('btn-submit-countdown-rc')?.addEventListener('click', submitRC);
+    inputRC?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submitRC();
     });
+    inputRC?.focus();
   }
 
   /* ==================== 模式 3：牌靴厚度與真數折算 ==================== */
@@ -415,8 +428,15 @@ export class CountingDrill {
       </div>
     `;
 
-    document.getElementById('btn-submit-tc')?.addEventListener('click', () => {
-      const userTC = parseInt(document.getElementById('input-tc-answer').value, 10);
+    const inputTC = document.getElementById('input-tc-answer');
+    const submitTC = () => {
+      const valStr = inputTC?.value.trim();
+      if (!valStr || isNaN(parseInt(valStr, 10))) {
+        alert('⚠️ 請輸入計算後的 True Count (真數整數值)！');
+        inputTC?.focus();
+        return;
+      }
+      const userTC = parseInt(valStr, 10);
       const isCorrect = userTC === expectedTC;
 
       if (isCorrect) this.sound.playCorrect();
@@ -427,7 +447,13 @@ export class CountingDrill {
         : `❌ 算錯了！\n正確計算: ${rc} / ${remainingDecks} = ${(rc/remainingDecks).toFixed(2)} -> 四捨五入應為 ${expectedTC}`
       );
       this.renderDeckEstimationIntro();
+    };
+
+    document.getElementById('btn-submit-tc')?.addEventListener('click', submitTC);
+    inputTC?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submitTC();
     });
+    inputTC?.focus();
   }
 
   /* ==================== 模式 4：Illustrious 18 偏差測驗 ==================== */

@@ -1,5 +1,5 @@
 /**
- * modal.css - 規則設定、統計報告與成就彈窗
+ * modal.css - 規則設定、統計報告與成就彈窗及免責聲明彈窗
  */
 
 .modal-backdrop {
@@ -11,18 +11,32 @@
   background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  display: flex;
+  display: none !important;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.25s ease-out;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  transition: opacity 0.2s ease-out;
 }
 
 .modal-backdrop.open {
-  opacity: 1;
-  pointer-events: auto;
+  display: flex !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
+}
+
+.modal-backdrop:not(.open) {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+.modal-backdrop:not(.open) * {
+  pointer-events: none !important;
 }
 
 .modal-card {
@@ -36,7 +50,8 @@
   padding: 2rem;
   box-shadow: var(--shadow-lg);
   transform: translateY(20px) scale(0.96);
-  transition: transform 0.25s ease-out;
+  transition: transform 0.2s ease-out;
+  pointer-events: auto;
 }
 
 .modal-backdrop.open .modal-card {
@@ -157,3 +172,159 @@ input:checked + .slider {
 input:checked + .slider:before {
   transform: translateX(22px);
 }
+
+/* 頁面鎖定 (防止開啟聲明時滾動背景) */
+body.modal-locked {
+  overflow: hidden !important;
+}
+
+/* 進入前提示與免責聲明專用高奢樣式 (精簡零滑動版) */
+.disclaimer-backdrop {
+  z-index: 999999 !important;
+  background: rgba(4, 7, 13, 0.88) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.disclaimer-backdrop.gate-mode {
+  background: radial-gradient(circle at 50% 30%, #151d30 0%, #080c14 80%) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.disclaimer-backdrop.fade-out {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+.disclaimer-modal-card {
+  max-width: 520px !important;
+  width: 92% !important;
+  padding: 1.5rem !important;
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.85), 0 0 30px rgba(245, 158, 11, 0.15) !important;
+  background: linear-gradient(180deg, #131b2e 0%, #0a0e1a 100%) !important;
+  position: relative;
+  border-radius: var(--radius-md) !important;
+  transform: translateY(0) scale(1) !important;
+}
+
+.disclaimer-modal-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--gold-gradient);
+}
+
+.disclaimer-badge-header {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.4rem;
+}
+
+.disclaimer-icon-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.disclaimer-intro-text {
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+/* 3大聲明精簡列表 (無須任何滑動) */
+.disclaimer-compact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-bottom: 0.5rem;
+}
+
+.disclaimer-compact-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid var(--border-glass);
+  border-left: 3px solid var(--gold-primary);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.disclaimer-item-icon {
+  font-size: 1.1rem;
+  line-height: 1.2;
+  flex-shrink: 0;
+}
+
+/* 操作按鈕群 (整合「我已同意」直接確認進入，或取消) */
+.disclaimer-btn-group {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  position: relative;
+  z-index: 10;
+}
+
+.disclaimer-btn-group button {
+  position: relative;
+  z-index: 15;
+  cursor: pointer;
+  user-select: none;
+  pointer-events: auto !important;
+}
+
+.btn-disclaimer-enter {
+  flex: 1.5;
+  padding: 0.8rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  box-shadow: 0 4px 18px rgba(245, 158, 11, 0.35);
+  transition: all 0.2s ease;
+  background: var(--gold-gradient);
+  color: #000;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: center;
+}
+
+.btn-disclaimer-enter:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(245, 158, 11, 0.5);
+}
+
+.btn-disclaimer-enter:active {
+  transform: translateY(0);
+}
+
+/* 視覺提示抖動效果 */
+@keyframes shakeAlert {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+.shake-highlight {
+  animation: shakeAlert 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  border-color: var(--color-danger) !important;
+}
+

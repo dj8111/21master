@@ -161,8 +161,12 @@ export class StrategyEngine {
     }
 
     // 3. 硬牌判定 (Hard Totals)
-    const hardTotal = Math.min(Math.max(handInfo.total, 8), 17);
-    let rawAction = this.HARD_TABLE[hardTotal.toString()] ? this.HARD_TABLE[hardTotal.toString()][dIdx] : (hardTotal > 17 ? 'S' : 'H');
+    if (handInfo.total >= 18) {
+      // 18點以上必定停牌
+      return 'S';
+    }
+    const hardTotal = Math.max(handInfo.total, 8);
+    let rawAction = this.HARD_TABLE[hardTotal.toString()] ? this.HARD_TABLE[hardTotal.toString()][dIdx] : 'H';
 
     if (rawAction === 'D_H17') rawAction = isH17 ? 'D' : 'H';
     if (rawAction === 'Rh_H17') rawAction = isH17 ? 'Rh' : 'H';

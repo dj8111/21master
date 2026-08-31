@@ -207,6 +207,9 @@ export class TableSimulator {
     // 鍵盤快速鍵支援
     window.addEventListener('keydown', (e) => {
       if (!document.querySelector('.tab-pane#pane-table.active')) return;
+      // 如果者在编輯列表內部，跳過鍵盤劫持
+      if (e.target && ['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;
+
       const key = e.key.toUpperCase();
 
       if (this.gameState === 'ROUND_OVER') {
@@ -224,11 +227,11 @@ export class TableSimulator {
           this.rebet();
         }
       } else if (this.gameState === 'SEATS_TURN' && this.activeSeatIndex === this.playerSeatIndex) {
-        if (key === 'H') this.handlePlayerAction('H');
-        if (key === 'S') this.handlePlayerAction('S');
-        if (key === 'D') this.handlePlayerAction('D');
-        if (key === 'P') this.handlePlayerAction('P');
-        if (key === 'R') this.handlePlayerAction('R');
+        if (key === 'H') { e.preventDefault(); this.handlePlayerAction('H'); }
+        if (key === 'S') { e.preventDefault(); this.handlePlayerAction('S'); }
+        if (key === 'D') { e.preventDefault(); this.handlePlayerAction('D'); }
+        if (key === 'P') { e.preventDefault(); this.handlePlayerAction('P'); }
+        if (key === 'R') { e.preventDefault(); this.handlePlayerAction('R'); }
       }
     });
   }
@@ -432,19 +435,25 @@ export class TableSimulator {
   }
 
   /**
-   * 玩家本家操作行動
+   * 玩家本家操作行動 (要牌、停牌、加倍、分牌、投降)
    */
   handlePlayerAction(action) {
     if (this.gameState !== 'SEATS_TURN' || this.activeSeatIndex !== this.playerSeatIndex) return;
 
     const playerSeat = this.seats[this.playerSeatIndex];
+    if (!playerSeat || playerSeat.status !== 'PLAYING') return;
+
     const dealerUp = this.dealerCards[0];
     const remainingDecks = this.deck.getRemainingDecks();
     const tc = this.counter.getTrueCount(remainingDecks);
     const optimal = StrategyEngine.getOptimalDecision(playerSeat.cards, dealerUp, tc, this.rules);
 
     // 記錄決策準確度
-    const isCorrect = (action === optimal.action || (action === 'H' && optimal.action === 'D'));
+    const isCorrect = (action === optimal.action || 
+                       (action === 'H' && optimal.action === 'D') || 
+                       (action === 'S' && optimal.action === 'Ds') || 
+                       (action === 'S' && optimal.action === 'Rs') || 
+                       (action === 'H' && optimal.action === 'Rh'));
     this.analytics.recordDecision(isCorrect, isCorrect ? '' : `手牌: ${playerSeat.cards.map(c=>c.rank).join(',')} vs 莊家: ${dealerUp.rank}。建議: ${optimal.action} (${optimal.reason})`);
 
     if (!isCorrect && this.coachMode) {
@@ -463,7 +472,7 @@ export class TableSimulator {
         playerSeat.status = (evalH.total === 21) ? 'STAND' : 'BUST';
         this.updateHUD();
         this.render();
-        setTimeout(() => this.startNextSeatTurn(this.playerSeatIndex + 1), 500);
+        setTimeout(() => this.startNextSeatTurn(this.playerSeatIndex + 1), 450);
       } else {
         this.updateHUD();
         this.render();
@@ -471,8 +480,9 @@ export class TableSimulator {
     } else if (action === 'S') {
       playerSeat.status = 'STAND';
       this.sound.playKnock();
+      this.updateHUD();
       this.render();
-      setTimeout(() => this.startNextSeatTurn(this.playerSeatIndex + 1), 400);
+      setTimeout(() => this.startNextSeatTurn(this.playerSeatIndex + 1), 350);
     } else if (action === 'D') {
       if (this.bankroll >= this.currentBet) {
         this.bankroll -= this.currentBet;
@@ -489,13 +499,14 @@ export class TableSimulator {
         playerSeat.status = (evalH.total > 21) ? 'BUST' : 'STAND';
         this.updateHUD();
         this.render();
-        setTimeout(() => this.startNextSeatTurn(this.playerSeatIndex + 1), 500);
+        setTimeout(() => this.startNextSeatTurn(this.playerSeatIndex + 1), 450);
       } else {
         this.showToast('餘額不足，無法加倍！', 'mistake');
       }
     } else if (action === 'R') {
       playerSeat.status = 'SURRENDER';
       this.bankroll += Math.floor(this.currentBet / 2);
+      this.updateHUD();
       this.render();
       setTimeout(() => this.startNextSeatTurn(this.playerSeatIndex + 1), 400);
     } else if (action === 'P') {
@@ -703,7 +714,12 @@ export class TableSimulator {
 
     const toast = document.createElement('div');
     toast.className = `coach-toast ${type}`;
-    toast.innerHTML = `<div class="toast-content" style="white-space: pre-line;">${message}</div>`;
+    // 使用 textContent 防止 XSS 注入
+    const contentEl = document.createElement('div');
+    contentEl.className = 'toast-content';
+    contentEl.style.whiteSpace = 'pre-line';
+    contentEl.textContent = message;
+    toast.appendChild(contentEl);
     document.body.appendChild(toast);
 
     setTimeout(() => {
@@ -837,7 +853,7 @@ export class TableSimulator {
 
     // 按鈕可用性更新
     const isBetting = (this.gameState === 'BETTING');
-    const isMyTurn = (this.gameState === 'SEATS_TURN' && this.activeSeatIndex === this.playerSeatIndex);
+    const isMyTurn = (this.gameState === 'SEATS_TURN' && this.activeSeatIndex === this.playerSeatIndex && this.seats[this.playerSeatIndex]?.status === 'PLAYING');
     const pCards = this.seats[this.playerSeatIndex]?.cards || [];
 
     if (this.btnDeal) {

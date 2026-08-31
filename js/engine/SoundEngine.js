@@ -109,6 +109,13 @@ export class SoundEngine {
   }
 
   /**
+   * 敲桌停牌聲 (相容別名)
+   */
+  playKnock() {
+    this.playTableTap();
+  }
+
+  /**
    * 勝利/黑傑克和弦 (大三和弦琶音)
    */
   playWin() {

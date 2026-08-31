@@ -108,17 +108,20 @@ export class RiskOfRuinSimulator {
   }
 
   runSimulation() {
-    const bankroll = parseFloat(document.getElementById('ror-input-bankroll')?.value || 10000);
-    const unit = parseFloat(document.getElementById('ror-input-unit')?.value || 25);
+    // 安全性限制輸入值範圍，防止極端值導致模擬器崩潰
+    const bankroll = Math.max(100, Math.min(10_000_000, parseFloat(document.getElementById('ror-input-bankroll')?.value) || 10000));
+    const unit = Math.max(1, Math.min(100_000, parseFloat(document.getElementById('ror-input-unit')?.value) || 25));
     const spread = parseInt(document.getElementById('ror-input-spread')?.value || 12, 10);
-    const totalHands = parseInt(document.getElementById('ror-input-hands')?.value || 5000, 10);
+    const totalHands = Math.max(100, Math.min(100_000, parseInt(document.getElementById('ror-input-hands')?.value || 5000, 10)));
 
     // 依下注級距計算平均優勢 (EV) 與標準差 (SD)
     // 6-Deck S17 典型 Hi-Lo 1:12 級距: EV ≈ 1.35% of total action, SD ≈ 1.15 per hand
     const avgAdvantage = 0.0135;
     const avgBetSize = unit * (1 + spread) * 0.25; // 綜合考慮各真數頻率下之平均注碼
     const evPerHand = avgBetSize * avgAdvantage;
-    const hourlyEV = (evPerHand * 100).toFixed(2);
+    // 修正：每小時 EV = 每手 EV × 每小時手數 (100 手)
+    const handsPerHour = 100;
+    const hourlyEV = (evPerHand * handsPerHour).toFixed(2);
     const sdPerHand = avgBetSize * 1.15;
 
     // 破產率公式: RoR = exp(-2 * (EV * Bankroll) / (SD^2))

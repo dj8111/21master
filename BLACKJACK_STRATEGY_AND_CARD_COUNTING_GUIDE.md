@@ -42,13 +42,15 @@
 基本策略是依據電腦模擬數億手牌後計算出的**期望值 (Expected Value, EV) 最大化**行動指南。
 
 ### 代號說明
-- **H**: 要牌 (Hit)
-- **S**: 停牌 (Stand)
-- **D**: 加倍 (Double down)，若規則不允許加倍則要牌 (Hit)
-- **Ds**: 加倍 (Double down)，若規則不允許加倍則停牌 (Stand)
-- **P**: 分牌 (Split)
-- **Rh**: 投降 (Surrender)，若不允許投降則要牌 (Hit)
-- **Rs**: 投降 (Surrender)，若不允許投降則停牌 (Stand)
+- **H**: 要牌 (Hit) — 繼續取牌
+- **S**: 停牌 (Stand) — 不再取牌，結束回合
+- **D**: 加倍下注 (Double Down)，若手牌已超過兩張或規則不允許加倍則改為**要牌** (Hit)
+- **Ds**: 加倍下注 (Double Down)，若手牌已超過兩張或規則不允許加倍則改為**停牌** (Stand)
+- **P**: 分牌 (Split) — 兩張同點牌分為兩手分別繼續
+- **Rh**: 投降 (Surrender)，若規則**不允許**投降則改為**要牌** (Hit)
+- **Rs**: 投降 (Surrender)，若規則**不允許**投降則改為**停牌** (Stand)
+
+> **⚠️ 本網站操作提示**：「投降 (Surrender)」按鈕只在賭規設定允許「遲投降 (Late Surrender)」時可用。若已關閉 Late Surrender，此按鈕將被停用，系統會自動將 `Rh` 視為「要牌」、`Rs` 視為「停牌」。
 
 ---
 
@@ -211,10 +213,12 @@
 | **18** | **13** | 3 | Stand | **TC $< -2$** | **Hit** |
 
 ### 5.2 Fab 4 投降偏差 (Fab Four Surrender)
-1. **14 vs 10**：基本策略為 Hit，當 **TC $\ge +3$** 時選擇 **Surrender**。
-2. **15 vs 9**：基本策略為 Hit，當 **TC $\ge +2$** 時選擇 **Surrender**。
-3. **15 vs 10**：基本策略為 Surrender，當 **TC $\ge 0$** 時 **Surrender**（若不可投降則見 I18）。
-4. **15 vs A**：基本策略為 Hit (S17)，當 **TC $\ge -1$** (H17) 或 **TC $\ge +2$** (S17) 時選擇 **Surrender**。
+> **注意**：以下偏差僅在賭規允許「遲投降 (Late Surrender)」時有效。若賭規不允許投降，則下列手牌應退而改用基本策略（Hit 或 Stand）。
+
+1. **14 vs 10**：基本策略為 Hit，當 **TC $\ge +3$** 時選擇 **Surrender**（不可投降則 Hit）。
+2. **15 vs 9**：基本策略為 Hit，當 **TC $\ge +2$** 時選擇 **Surrender**（不可投降則 Hit）。
+3. **15 vs 10**：基本策略為 Surrender，當 **TC $\ge 0$** 時 **Surrender**（若不可投降則見 I18 #3，TC ≥ +4 時 Stand，否則 Hit）。
+4. **15 vs A**：基本策略為 Hit (S17)，當 **TC $\ge -1$** (H17) 或 **TC $\ge +2$** (S17) 時選擇 **Surrender**（不可投降則 Hit）。
 
 ---
 

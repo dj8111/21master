@@ -319,11 +319,16 @@
   bottom: 0;
   background: rgba(8, 12, 20, 0.78);
   backdrop-filter: blur(8px);
-  display: flex;
+  -webkit-backdrop-filter: blur(8px);
+  display: none;
   justify-content: center;
   align-items: center;
   z-index: 60;
   animation: fadeIn 0.25s ease-out;
+}
+
+.round-result-overlay.active {
+  display: flex !important;
 }
 
 .round-result-card {
@@ -631,6 +636,7 @@
   padding: 0.1rem 0.35rem;
   border-radius: 4px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
 }
 
 @keyframes pulseOptimal {
@@ -661,6 +667,7 @@
   z-index: 200;
   display: flex;
   font-size: 0.9rem;
+  pointer-events: none;
 }
 
 .coach-toast.mistake {
